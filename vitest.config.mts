@@ -13,6 +13,7 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     setupFiles: ["tests/support/setup.ts"],
+    globalSetup: ["tests/support/global-setup.ts"],
     // Testes de integração compartilham o mesmo banco: rodar em série.
     fileParallelism: false,
     coverage: {

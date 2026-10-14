@@ -72,7 +72,8 @@ const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" 
 export function formatBRL(cents: Cents): string {
   assertCents(cents);
   // Divisão por 100 apenas para exibição; o valor exibido é exato até 2^53.
-  return brl.format(cents / 100).replace(/ /g, " ");
+  // "+ 0" normaliza o zero negativo (que seria exibido como "-R$ 0,00").
+  return brl.format((cents + 0) / 100).replace(/ /g, " ");
 }
 
 /** Multiplica centavos por pontos-base (1 bp = 0,01%), arredondando para baixo. */
@@ -83,4 +84,12 @@ export function applyBps(cents: Cents, bps: number): Cents {
   }
   // BigInt evita perda de precisão em produtos grandes.
   return Number((BigInt(cents) * BigInt(bps)) / 10_000n);
+}
+
+/** Centavos → texto para campo de formulário: 10050 → "100,50". */
+export function centsToInput(cents: Cents): string {
+  assertCents(cents);
+  const sign = cents < 0 ? "-" : "";
+  const abs = Math.abs(cents);
+  return `${sign}${Math.trunc(abs / 100)},${String(abs % 100).padStart(2, "0")}`;
 }

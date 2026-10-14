@@ -31,6 +31,10 @@ describe("formatBRL", () => {
     expect(formatBRL(5)).toBe("R$ 0,05");
   });
 
+  it('nunca exibe "-R$ 0,00" (zero negativo)', () => {
+    expect(formatBRL(-0)).toBe("R$ 0,00");
+  });
+
   it("recusa valores não inteiros", () => {
     expect(() => formatBRL(10.5)).toThrow(MoneyError);
   });

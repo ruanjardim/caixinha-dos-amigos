@@ -10,6 +10,7 @@
 - PostgreSQL 16+ com TLS e backups automáticos
 - Domínio com HTTPS (obrigatório para cookies seguros e para o PWA)
 - Servidor SMTP para recuperação de senha e comunicados
+- Armazenamento persistente para comprovantes (`storage/uploads` ou armazenamento de objetos), com backup
 
 ## Variáveis de ambiente
 
@@ -19,7 +20,7 @@ Ver [`.env.example`](../.env.example). Em produção:
 - `BETTER_AUTH_URL`: URL pública (`https://...`).
 - `DATABASE_URL` com `sslmode=require`.
 - `SMTP_*` preenchidos (sem SMTP o envio de e-mails falha em produção).
-- **Não** definir `DEV_SEED_PASSWORD`.
+- **Não** definir `DEV_SEED_PASSWORD`, `LOCAL_PG_*` nem `TEST_DATABASE_URL`.
 
 ## Passos
 

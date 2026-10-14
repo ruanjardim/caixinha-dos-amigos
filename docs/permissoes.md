@@ -36,5 +36,9 @@ Fonte da verdade: [`src/modules/auth/permissions.ts`](../src/modules/auth/permis
 
 ¹ Somente se o administrador também tiver cadastro de participante vinculado, e apenas para os próprios dados.
 
-> **Conflito de interesse:** se o administrador também participar, recomenda-se que outro administrador confirme
-> os pagamentos dele (a ser implementado na Fase 2 como alerta/bloqueio configurável).
+> **Conflito de interesse (implementado):** se o administrador também participar, **outro administrador ativo**
+> deve confirmar os pagamentos dele. Sendo o único administrador, a confirmação exige justificativa, registrada na
+> auditoria com a marca `selfConfirmed`.
+
+> **Comprovantes:** só são baixados pelo administrador ou pelo próprio participante dono do pagamento. Para
+> qualquer outra pessoa a resposta é "não encontrado" (não revela a existência do arquivo).

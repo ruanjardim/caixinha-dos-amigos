@@ -19,6 +19,9 @@
 | Configuração | `.env` validado na inicialização; segredos nunca no código; `.env` fora do git |
 | Usuário suspenso | Não consegue iniciar sessão; permissões zeradas imediatamente |
 | PWA | Service worker não armazena páginas nem dados financeiros em cache |
+| Comprovantes | Tipo verificado pelo CONTEÚDO (PDF/PNG/JPG/WEBP), máx. 5 MB, nome saneado, hash SHA-256, guardados fora da pasta pública, download com verificação de permissão e `Content-Disposition: attachment` + `nosniff` |
+| Pagamentos | Nunca confirmados automaticamente; anti-duplicidade em 3 níveis (idempotência, referência única no banco, alerta de mesmo valor/data); confirmação atômica |
+| Ordem de verificação | Em toda ação: sessão/permissão ANTES de validar dados |
 
 ## Pendente (Fase 7)
 

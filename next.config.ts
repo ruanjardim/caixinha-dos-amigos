@@ -38,6 +38,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Pacotes nativos/servidor que não devem ser empacotados.
   serverExternalPackages: ["@node-rs/argon2", "pg"],
+  experimental: {
+    // Comprovantes de até 5 MB enviados por Server Actions.
+    serverActions: { bodySizeLimit: "6mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {

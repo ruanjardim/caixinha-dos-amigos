@@ -1,7 +1,7 @@
 # Cálculos financeiros
 
-> Status: **especificação**. Utilitários de dinheiro implementados e testados (`src/domain/money.ts`).
-> Cálculo de parcelas na Fase 2; apuração e distribuição na Fase 4.
+> Status: seções 1–2 e livro-caixa **implementados e testados** (Fase 2: `src/domain/money.ts`, `dates.ts`,
+> `installments.ts`, `contributions.ts`, `ledger.ts`). Seções 3–5 (apuração e distribuição) serão implementadas na Fase 4.
 
 ## 1. Dinheiro
 
@@ -20,8 +20,29 @@ saldo de contribuições = previsto − pago
 
 Exemplo: João tem 2 cotas de R$ 50 → mensalidade R$ 100 → previsto em 12 meses R$ 1.200.
 
-Pagamentos são **alocados às parcelas em ordem cronológica**. O que exceder as parcelas vencidas cobre as
-próximas (antecipação). Pagamento parcial deixa a parcela parcialmente coberta.
+**Regra de cobertura (implementada):** o total recebido (somente pagamentos CONFIRMADOS; estornados e recusados não
+contam; "em análise" aparece à parte e NÃO cobre parcelas) cobre as parcelas ativas em ordem de competência.
+
+| Situação | Critério |
+| --- | --- |
+| Paga | totalmente coberta |
+| Antecipada | totalmente coberta e com vencimento ainda no futuro |
+| Parcial | coberta em parte |
+| Em atraso | vencimento **antes** de hoje e não totalmente coberta (o próprio dia do vencimento não é atraso) |
+| A vencer | sem cobertura e vencimento hoje ou no futuro |
+
+Valor recebido acima do total previsto vira **crédito** (excedente), exibido à parte. "Hoje" é a data no fuso de
+Brasília.
+
+Exemplos testados (João, 2 cotas de R$ 50, vencimento dia 10):
+- R$ 60 em dezembro → dez/2026 parcial (R$ 40 em aberto).
+- R$ 350 em dezembro → dez, jan e fev pagas; mar parcial (R$ 50).
+- R$ 1.200 em dezembro → as 12 parcelas cobertas (11 antecipadas).
+- Pagamento de R$ 100 estornado → volta a constar como em aberto.
+
+**Alteração de cotas** (ciclo aberto): vale a partir de uma competência cujo vencimento ainda não passou;
+parcelas anteriores não mudam. **Saída do ciclo**: parcelas de competências posteriores à saída são canceladas
+(registradas, nunca apagadas). **Entrada com ciclo aberto**: parcelas a partir do mês de entrada.
 
 ## 3. Resultado líquido
 

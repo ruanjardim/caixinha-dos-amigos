@@ -23,13 +23,16 @@ Fonte da verdade: [`prisma/schema.prisma`](../prisma/schema.prisma). Valores mon
 | `participant` | Cadastro mínimo (LGPD): nome, e-mail, telefone, data de entrada, status |
 | `membership` | Participante × ciclo: quantidade e valor da cota |
 | `membership_change` | Histórico de mudança de cotas |
-| `installment` | **Parcela prevista** (obrigação). Não é dinheiro. |
+| `installment` | **Parcela prevista** (obrigação). Não é dinheiro. Cancelada (nunca apagada) quando deixa de ser devida. |
 
 ### Financeiro
+
+> A tabela `payment_allocation` da Fase 1 foi removida: a cobertura das parcelas é **calculada** (ver
+> [cálculos](calculos-financeiros.md)).
+
 | Tabela | Descrição |
 | --- | --- |
-| `payment` | Pagamento: valor, data de crédito, meio, referência, status, quem confirmou. Nunca apagado. Único por (meio, referência). |
-| `payment_allocation` | Quanto de cada pagamento quita cada parcela (parcial/antecipado) |
+| `payment` | Pagamento: valor, data de crédito, meio, referência, status, quem registrou, quem confirmou (e justificativa), recusa, estorno, comprovante, chave de idempotência. Nunca apagado. Único por (meio, referência). |
 | `ledger_transaction` / `ledger_line` | Livro-caixa em partidas dobradas. Soma das linhas = 0 (garantido no banco). Somente inclusão. |
 | `cash_reconciliation` | Conciliação saldo contábil × extrato |
 
@@ -67,8 +70,9 @@ Exemplo — contribuição de R$ 100 confirmada:
 ## Proteções no banco (migration `integrity_triggers`)
 
 - `audit_log`, `ledger_transaction`, `ledger_line`: UPDATE/DELETE bloqueados.
-- `payment`, `payment_allocation`: DELETE bloqueado.
-- Lançamento com soma ≠ 0 é rejeitado ao final da transação.
+- `payment`, `installment`: DELETE bloqueado.
+- Ciclo de vida do pagamento: PENDENTE → EM ANÁLISE → CONFIRMADO → ESTORNADO (ou → RECUSADO). Cancelado e estornado são finais; confirmado exige data de crédito e responsável; depois de confirmado, valor, data, participante, meio e referência são imutáveis.
+- Lançamento com soma ≠ 0 é rejeitado ao fim do INSERT das linhas (gatilho por comando).
 - Ciclo `CLOSED` só aceita lançamentos com `postClosing = true` (procedimento auditável); ciclo `DRAFT` não aceita lançamentos.
 - `cycle_rules` congeladas não podem ser alteradas.
 - Apuração `APPROVED` não pode ser alterada (só marcada como `SUPERSEDED`).

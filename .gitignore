@@ -50,3 +50,6 @@ next-env.d.ts
 # uploads locais e backups
 /storage
 /backups
+
+# PostgreSQL local de desenvolvimento
+/.postgres

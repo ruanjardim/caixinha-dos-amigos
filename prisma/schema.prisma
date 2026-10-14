@@ -50,6 +50,7 @@ model User {
 
   auditLogs           AuditLog[]          @relation("AuditActor")
   confirmedPayments   Payment[]           @relation("PaymentConfirmedBy")
+  registeredPayments  Payment[]           @relation("PaymentRegisteredBy")
   ledgerTransactions  LedgerTransaction[] @relation("LedgerCreatedBy")
   complianceApprovals ComplianceApproval[]
 
@@ -282,6 +283,8 @@ model MembershipChange {
 }
 
 /// Parcela PREVISTA (obrigação). Não representa dinheiro recebido.
+/// A cobertura de cada parcela é CALCULADA (src/domain/contributions.ts) a partir
+/// dos pagamentos confirmados — nunca armazenada.
 model Installment {
   id            String     @id @default(cuid())
   membershipId  String
@@ -289,9 +292,11 @@ model Installment {
   competence    String // "AAAA-MM"
   dueDate       DateTime   @db.Date
   expectedCents Int
+  /// Parcela deixa de ser devida (ex.: saída do participante). Nunca apagada.
+  cancelledAt   DateTime?
+  cancelReason  String?
   createdAt     DateTime   @default(now())
-
-  allocations PaymentAllocation[]
+  updatedAt     DateTime   @default(now()) @updatedAt
 
   @@unique([membershipId, competence])
   @@map("installment")
@@ -329,9 +334,16 @@ model Payment {
   transactionRef String?
   status         PaymentStatus @default(PENDING)
   notes          String?
+  /// Quem registrou: o próprio participante (informou) ou um administrador.
+  registeredById String?
+  registeredBy   User?         @relation("PaymentRegisteredBy", fields: [registeredById], references: [id], onDelete: Restrict)
   confirmedById  String?
   confirmedBy    User?         @relation("PaymentConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
   confirmedAt    DateTime?
+  /// Justificativa obrigatória quando o administrador confirma o próprio pagamento.
+  confirmationNote String?
+  cancelledAt    DateTime?
+  cancelReason   String?
   reversedAt     DateTime?     @db.Date
   reversalReason String?
   idempotencyKey String?       @unique
@@ -340,26 +352,13 @@ model Payment {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  allocations PaymentAllocation[]
-  pixCharge   PixCharge?
+  pixCharge PixCharge?
 
   // Impede registrar duas vezes a mesma transação do mesmo meio de pagamento.
   @@unique([method, transactionRef])
   @@index([membershipId, status])
+  @@index([status])
   @@map("payment")
-}
-
-model PaymentAllocation {
-  id            String      @id @default(cuid())
-  paymentId     String
-  payment       Payment     @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  installmentId String
-  installment   Installment @relation(fields: [installmentId], references: [id], onDelete: Restrict)
-  amountCents   Int
-  createdAt     DateTime    @default(now())
-
-  @@unique([paymentId, installmentId])
-  @@map("payment_allocation")
 }
 
 // -----------------------------------------------------------------------------

@@ -33,7 +33,7 @@ export function MoneyValue({
 }) {
   const label = kind === "neutral" ? undefined : MONEY_KIND_LABEL[kind];
   return (
-    <span className={cn("tabular font-bold", styles[kind], className)} title={label}>
+    <span className={cn("tabular relative font-bold", styles[kind], className)} title={label}>
       {formatBRL(cents)}
       {label && <span className="sr-only"> ({label})</span>}
     </span>

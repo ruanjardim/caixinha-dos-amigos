@@ -27,11 +27,15 @@ Depois de conferir os dados no banco restaurado, aponte `DATABASE_URL` para ele 
 
 ## Desenvolvimento
 
-O banco local (`prisma dev`) é descartável. Para recriá-lo do zero:
+O PostgreSQL local (`npm run db:start`) guarda os dados em `.postgres/` (fora do git). Para recriar o banco de
+desenvolvimento do zero:
 
 ```bash
-npx prisma migrate reset   # apaga TUDO no banco local, reaplica migrations e roda o seed
+npx prisma migrate reset   # apaga TUDO no banco caixinha_dev e reaplica as migrations
+npm run db:seed            # recria os usuários fictícios de demonstração
 ```
+
+O banco `caixinha_test` é esvaziado automaticamente a cada `npm test`.
 
 ## Arquivos enviados
 

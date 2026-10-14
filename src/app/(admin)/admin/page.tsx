@@ -1,4 +1,6 @@
 import { CalendarRange, CheckCircle2, Circle, Lock, ShieldCheck, Users } from "lucide-react";
+import Link from "next/link";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoneyLegend } from "@/components/ui/money-value";
@@ -25,7 +27,7 @@ const FLAG_LABELS: Record<string, { title: string; why: string }> = {
 
 const PHASES = [
   { n: 1, title: "Fundação", done: true },
-  { n: 2, title: "Gestão financeira", done: false },
+  { n: 2, title: "Gestão financeira", done: true },
   { n: 3, title: "Painéis", done: false },
   { n: 4, title: "Resultados", done: false },
   { n: 5, title: "Atividades de arrecadação", done: false },
@@ -35,12 +37,13 @@ const PHASES = [
 
 export default async function AdminDashboard() {
   const user = await requirePagePermission("dashboard.admin");
-  const [participants, users, cycles, auditCount, flags] = await Promise.all([
+  const [participants, users, cycles, auditCount, flags, underReview] = await Promise.all([
     db.participant.count({ where: { status: "ACTIVE" } }),
     db.user.count({ where: { status: "ACTIVE" } }),
     db.cycle.count(),
     db.auditLog.count(),
     db.featureFlag.findMany({ orderBy: { key: "asc" } }),
+    db.payment.count({ where: { status: "UNDER_REVIEW" } }),
   ]);
 
   return (
@@ -49,15 +52,25 @@ export default async function AdminDashboard() {
         <p className="text-brand-700 text-sm font-semibold">Painel do administrador</p>
         <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Olá, {user.name.split(" ")[0]}!</h1>
         <p className="text-muted">
-          Fundação do sistema concluída. Os indicadores financeiros completos chegam na Fase 3.
+          Gestão financeira disponível. Os indicadores e gráficos completos chegam na Fase 3.
         </p>
       </header>
+
+      {underReview > 0 && (
+        <Alert tone="warning" title={`${underReview} pagamento(s) aguardando conferência`}>
+          <Link href="/admin/pagamentos?status=UNDER_REVIEW" className="font-semibold underline">
+            Conferir agora
+          </Link>
+        </Alert>
+      )}
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Indicadores">
         <StatCard label="Participantes ativos" icon={Users} value={participants} />
         <StatCard label="Usuários com acesso" icon={ShieldCheck} value={users} />
         <StatCard label="Ciclos" icon={CalendarRange} value={cycles} />
-        <StatCard label="Registros de auditoria" icon={Lock} value={auditCount} />
+        <Link href="/admin/auditoria" className="rounded-[var(--radius-card)]">
+          <StatCard label="Registros de auditoria" icon={Lock} value={auditCount} hint="Ver auditoria →" />
+        </Link>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
