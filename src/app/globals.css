@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/*
+ * Identidade visual — Caixinha dos Amigos
+ * Tema claro, verde como destaque, branco e tons suaves.
+ */
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  /* Verde da marca */
+  --color-brand-50: #ecfdf3;
+  --color-brand-100: #d1fadf;
+  --color-brand-200: #a6f4c5;
+  --color-brand-300: #6ce9a6;
+  --color-brand-400: #32d583;
+  --color-brand-500: #12b76a;
+  --color-brand-600: #039855;
+  --color-brand-700: #027a48;
+  --color-brand-800: #05603a;
+  --color-brand-900: #054f31;
+
+  /* Neutros levemente esverdeados */
+  --color-canvas: #f6f8f7;
+  --color-surface: #ffffff;
+  --color-line: #e3e9e6;
+  --color-ink: #0f1a16;
+  --color-ink-soft: #3d4a45;
+  --color-muted: #66746e;
+
+  /* Semântica dos valores financeiros */
+  --color-received: #039855; /* dinheiro efetivamente recebido */
+  --color-calculated: #0e7090; /* resultado já apurado */
+  --color-projection: #8a9692; /* projeção não garantida */
+
+  --color-warning: #b54708;
+  --color-warning-bg: #fffaeb;
+  --color-danger: #b42318;
+  --color-danger-bg: #fef3f2;
+  --color-info: #175cd3;
+  --color-info-bg: #eff8ff;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 1px 2px rgb(16 24 20 / 0.04), 0 1px 3px rgb(16 24 20 / 0.06);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 0;
+}
+
+/* Números financeiros sempre com dígitos tabulares (alinhados). */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Área segura de iPhone (PWA em tela cheia). */
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}

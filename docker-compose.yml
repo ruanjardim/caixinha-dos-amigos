@@ -1,0 +1,27 @@
+# Alternativa ao `npm run db:dev` para quem tiver Docker instalado.
+# Uso: docker compose up -d  → ajuste DATABASE_URL no .env:
+#   DATABASE_URL="postgresql://caixinha:caixinha_dev@localhost:5432/caixinha"
+#   SHADOW_DATABASE_URL="postgresql://caixinha:caixinha_dev@localhost:5432/caixinha_shadow"
+# Somente para DESENVOLVIMENTO (senha fraca e fixa).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: caixinha
+      POSTGRES_PASSWORD: caixinha_dev
+      POSTGRES_DB: caixinha
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - caixinha-pg:/var/lib/postgresql/data
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025" # SMTP  → SMTP_HOST=localhost SMTP_PORT=1025
+      - "127.0.0.1:8025:8025" # Interface web: http://localhost:8025
+
+volumes:
+  caixinha-pg:

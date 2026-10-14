@@ -1,0 +1,737 @@
+// =============================================================================
+// CAIXINHA DOS AMIGOS — Modelo de dados
+//
+// Convenções:
+// - Todos os valores monetários são Int em CENTAVOS (sufixo `Cents`). Nunca float.
+// - Tabelas financeiras são append-only: correções acontecem por lançamentos de
+//   reversão (ver `LedgerTransaction.reversesId` e `Payment.status = REVERSED`).
+// - `AuditLog` e `LedgerLine` são protegidos por triggers contra UPDATE/DELETE
+//   (ver migration `immutability_triggers`).
+// - Parcelas previstas (`Installment`) NUNCA representam dinheiro recebido.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -----------------------------------------------------------------------------
+// Identidade e acesso (tabelas usadas pelo Better Auth + campos próprios)
+// -----------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  PARTICIPANT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id            String     @id
+  name          String
+  email         String     @unique
+  emailVerified Boolean    @default(false)
+  image         String?
+  role          Role       @default(PARTICIPANT)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  sessions    Session[]
+  accounts    Account[]
+  participant Participant?
+
+  auditLogs           AuditLog[]          @relation("AuditActor")
+  confirmedPayments   Payment[]           @relation("PaymentConfirmedBy")
+  ledgerTransactions  LedgerTransaction[] @relation("LedgerCreatedBy")
+  complianceApprovals ComplianceApproval[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String? // hash argon2id — nunca texto simples
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limit")
+}
+
+/// Trilha de auditoria. Append-only (trigger bloqueia UPDATE/DELETE).
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+  action     String // ex.: "payment.confirm", "cycle.open", "auth.login_failed"
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  reason     String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+// -----------------------------------------------------------------------------
+// Ciclos, regras e participação
+// -----------------------------------------------------------------------------
+
+enum CycleStatus {
+  DRAFT // em configuração; regras ainda editáveis
+  OPEN // regras congeladas; recebendo contribuições
+  CONTRIBUTIONS_CLOSED // fim das contribuições; aguardando apuração
+  SETTLING // apuração aprovada; distribuições em andamento
+  CLOSED // encerrado e travado
+}
+
+model Cycle {
+  id                  String      @id @default(cuid())
+  name                String // ex.: "Ciclo 2026/2027"
+  startDate           DateTime    @db.Date
+  contributionEndDate DateTime    @db.Date
+  settlementDate      DateTime    @db.Date
+  dueDay              Int         @default(10) // dia de vencimento mensal (1–28)
+  status              CycleStatus @default(DRAFT)
+  openedAt            DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  rules              CycleRules[]
+  memberships        Membership[]
+  ledgerTransactions LedgerTransaction[]
+  resultCalculations ResultCalculation[]
+  activities         FundraisingActivity[]
+  announcements      Announcement[]
+  reconciliations    CashReconciliation[]
+
+  @@map("cycle")
+}
+
+enum DistributionMethod {
+  DAILY_BALANCE // saldo diário proporcional (padrão)
+}
+
+/// Versão das regras de um ciclo. Imutável depois de `frozenAt`.
+model CycleRules {
+  id                 String             @id @default(cuid())
+  cycleId            String
+  cycle              Cycle              @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  version            Int
+  adminFeeBps        Int                @default(1000) // 1000 bps = 10%
+  distributionMethod DistributionMethod @default(DAILY_BALANCE)
+  quotaValuesCents   Int[] // valores de cota permitidos, ex.: [5000, 10000]
+  rulesText          String // texto integral apresentado aos participantes
+  contentHash        String? // SHA-256 do conteúdo, calculado ao congelar
+  frozenAt           DateTime?
+  createdAt          DateTime           @default(now())
+
+  acceptances RulesAcceptance[]
+  results     ResultCalculation[]
+
+  @@unique([cycleId, version])
+  @@map("cycle_rules")
+}
+
+model RulesAcceptance {
+  id            String      @id @default(cuid())
+  cycleRulesId  String
+  cycleRules    CycleRules  @relation(fields: [cycleRulesId], references: [id], onDelete: Restrict)
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Restrict)
+  acceptedAt    DateTime    @default(now())
+  ipAddress     String?
+  userAgent     String?
+
+  @@unique([cycleRulesId, participantId])
+  @@map("rules_acceptance")
+}
+
+enum ParticipantStatus {
+  ACTIVE
+  INACTIVE
+  LEFT
+}
+
+/// Dados pessoais mínimos (LGPD: coletar apenas o necessário).
+model Participant {
+  id        String            @id @default(cuid())
+  userId    String?           @unique
+  user      User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName  String
+  email     String            @unique
+  phone     String?
+  joinedAt  DateTime          @db.Date
+  status    ParticipantStatus @default(ACTIVE)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  memberships     Membership[]
+  acceptances     RulesAcceptance[]
+  raffleNumbers   RaffleNumber[]
+  activityEntries ActivityParticipant[]
+
+  @@index([fullName])
+  @@map("participant")
+}
+
+enum MembershipStatus {
+  ACTIVE
+  LEFT
+}
+
+/// Vínculo participante × ciclo, com quantidade e valor de cotas.
+model Membership {
+  id              String           @id @default(cuid())
+  participantId   String
+  participant     Participant      @relation(fields: [participantId], references: [id], onDelete: Restrict)
+  cycleId         String
+  cycle           Cycle            @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  quotaCount      Int
+  quotaValueCents Int
+  status          MembershipStatus @default(ACTIVE)
+  joinedAt        DateTime         @db.Date
+  leftAt          DateTime?        @db.Date
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  changes      MembershipChange[]
+  installments Installment[]
+  payments     Payment[]
+  shares       ResultShare[]
+
+  @@unique([participantId, cycleId])
+  @@map("membership")
+}
+
+model MembershipChange {
+  id                    String     @id @default(cuid())
+  membershipId          String
+  membership            Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  previousQuotaCount    Int
+  newQuotaCount         Int
+  previousQuotaValueCts Int
+  newQuotaValueCts      Int
+  effectiveFrom         DateTime   @db.Date
+  reason                String
+  changedById           String
+  createdAt             DateTime   @default(now())
+
+  @@map("membership_change")
+}
+
+/// Parcela PREVISTA (obrigação). Não representa dinheiro recebido.
+model Installment {
+  id            String     @id @default(cuid())
+  membershipId  String
+  membership    Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  competence    String // "AAAA-MM"
+  dueDate       DateTime   @db.Date
+  expectedCents Int
+  createdAt     DateTime   @default(now())
+
+  allocations PaymentAllocation[]
+
+  @@unique([membershipId, competence])
+  @@map("installment")
+}
+
+// -----------------------------------------------------------------------------
+// Pagamentos
+// -----------------------------------------------------------------------------
+
+enum PaymentMethod {
+  PIX_MANUAL
+  PIX_SIMULATED
+  PIX_PROVIDER
+  BANK_TRANSFER
+  CASH
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  UNDER_REVIEW
+  CONFIRMED
+  CANCELLED
+  REVERSED
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  membershipId   String
+  membership     Membership    @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  amountCents    Int
+  /// Data de crédito efetivo na conta da caixinha (base do cálculo de resultados).
+  receivedAt     DateTime?     @db.Date
+  method         PaymentMethod
+  transactionRef String?
+  status         PaymentStatus @default(PENDING)
+  notes          String?
+  confirmedById  String?
+  confirmedBy    User?         @relation("PaymentConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  confirmedAt    DateTime?
+  reversedAt     DateTime?     @db.Date
+  reversalReason String?
+  idempotencyKey String?       @unique
+  proofFileId    String?
+  proofFile      FileUpload?   @relation(fields: [proofFileId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  allocations PaymentAllocation[]
+  pixCharge   PixCharge?
+
+  // Impede registrar duas vezes a mesma transação do mesmo meio de pagamento.
+  @@unique([method, transactionRef])
+  @@index([membershipId, status])
+  @@map("payment")
+}
+
+model PaymentAllocation {
+  id            String      @id @default(cuid())
+  paymentId     String
+  payment       Payment     @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  installmentId String
+  installment   Installment @relation(fields: [installmentId], references: [id], onDelete: Restrict)
+  amountCents   Int
+  createdAt     DateTime    @default(now())
+
+  @@unique([paymentId, installmentId])
+  @@map("payment_allocation")
+}
+
+// -----------------------------------------------------------------------------
+// Livro-caixa (partidas dobradas simplificadas)
+// -----------------------------------------------------------------------------
+
+enum LedgerAccount {
+  CASH // caixa / conta de recebimento (ativo)
+  PARTICIPANT_PRINCIPAL // principal devido aos participantes (passivo)
+  ADDITIONAL_REVENUE // receitas adicionais (atividades de arrecadação etc.)
+  EXPENSE // despesas
+  TAX // tributos e deduções
+  ADMIN_FEE // remuneração administrativa
+  RESULT_TO_DISTRIBUTE // resultado destinado aos participantes
+}
+
+enum LedgerCategory {
+  CONTRIBUTION
+  CONTRIBUTION_REVERSAL
+  ADDITIONAL_REVENUE
+  ADMIN_EXPENSE
+  ACTIVITY_COST
+  TAX
+  ADJUSTMENT
+  REVERSAL
+  ADMIN_FEE
+  DISTRIBUTION
+  PRINCIPAL_RETURN
+}
+
+/// Cabeçalho de lançamento. Soma das linhas deve ser zero.
+model LedgerTransaction {
+  id          String         @id @default(cuid())
+  cycleId     String
+  cycle       Cycle          @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  occurredOn  DateTime       @db.Date
+  category    LedgerCategory
+  description String
+  createdById String
+  createdBy   User           @relation("LedgerCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  paymentId   String?        @unique
+  reversesId  String?        @unique
+  reverses    LedgerTransaction?  @relation("Reversal", fields: [reversesId], references: [id], onDelete: Restrict)
+  reversedBy  LedgerTransaction?  @relation("Reversal")
+  activityId  String?
+  activity    FundraisingActivity? @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  attachmentId String?
+  attachment  FileUpload?    @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+  /// Lançamento feito após o encerramento do ciclo (procedimento de correção auditável).
+  postClosing Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+
+  lines LedgerLine[]
+
+  @@index([cycleId, occurredOn])
+  @@map("ledger_transaction")
+}
+
+/// Linha de lançamento. Valor positivo = débito; negativo = crédito. Append-only.
+model LedgerLine {
+  id            String            @id @default(cuid())
+  transactionId String
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  account       LedgerAccount
+  amountCents   Int
+  membershipId  String? // linhas de principal/resultado por participante
+
+  @@index([account])
+  @@index([membershipId])
+  @@map("ledger_line")
+}
+
+model CashReconciliation {
+  id                 String   @id @default(cuid())
+  cycleId            String
+  cycle              Cycle    @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  referenceDate      DateTime @db.Date
+  bookBalanceCents   Int // saldo contábil (conta CASH)
+  statementBalanceCents Int // saldo informado no extrato
+  differenceCents    Int
+  notes              String?
+  createdById        String
+  createdAt          DateTime @default(now())
+
+  @@map("cash_reconciliation")
+}
+
+// -----------------------------------------------------------------------------
+// Apuração e distribuição de resultados
+// -----------------------------------------------------------------------------
+
+enum ResultStatus {
+  DRAFT
+  APPROVED
+  SUPERSEDED
+}
+
+model ResultCalculation {
+  id                    String       @id @default(cuid())
+  cycleId               String
+  cycle                 Cycle        @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  cycleRulesId          String
+  cycleRules            CycleRules   @relation(fields: [cycleRulesId], references: [id], onDelete: Restrict)
+  cutoffDate            DateTime     @db.Date
+  revenueCents          Int
+  expenseCents          Int
+  taxCents              Int
+  netResultCents        Int
+  adminFeeCents         Int
+  distributableCents    Int
+  availableCashCents    Int
+  inputSnapshot         Json // entradas completas usadas no cálculo
+  contentHash           String
+  status                ResultStatus @default(DRAFT)
+  approvedById          String?
+  approvedAt            DateTime?
+  createdAt             DateTime     @default(now())
+
+  shares ResultShare[]
+
+  @@map("result_calculation")
+}
+
+model ResultShare {
+  id                 String            @id @default(cuid())
+  calculationId      String
+  calculation        ResultCalculation @relation(fields: [calculationId], references: [id], onDelete: Restrict)
+  membershipId       String
+  membership         Membership        @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  principalCents     Int
+  /// Peso = Σ(valor em centavos × dias disponíveis). BigInt para evitar overflow.
+  weight             BigInt
+  shareCents         Int
+
+  distributions Distribution[]
+
+  @@unique([calculationId, membershipId])
+  @@map("result_share")
+}
+
+model Distribution {
+  id               String      @id @default(cuid())
+  shareId          String
+  share            ResultShare @relation(fields: [shareId], references: [id], onDelete: Restrict)
+  principalCents   Int
+  resultCents      Int
+  paidOn           DateTime    @db.Date
+  transactionRef   String?
+  createdById      String
+  createdAt        DateTime    @default(now())
+
+  @@map("distribution")
+}
+
+// -----------------------------------------------------------------------------
+// Atividades de arrecadação (sorteios pagos DESATIVADOS por padrão)
+// -----------------------------------------------------------------------------
+
+enum ActivityType {
+  EVENT
+  PRODUCT_SALE
+  DONATION
+  RAFFLE // somente cadastro/simulação até aprovação de conformidade
+  OTHER
+}
+
+enum ActivityStatus {
+  DRAFT
+  PLANNED
+  IN_PROGRESS
+  FINISHED
+  CANCELLED
+}
+
+enum ComplianceStatus {
+  NOT_REQUIRED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model FundraisingActivity {
+  id               String           @id @default(cuid())
+  cycleId          String
+  cycle            Cycle            @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  type             ActivityType
+  title            String
+  description      String?
+  status           ActivityStatus   @default(DRAFT)
+  complianceStatus ComplianceStatus @default(PENDING_REVIEW)
+  /// Sempre true até existir aprovação de conformidade + feature flag ligada.
+  simulationOnly   Boolean          @default(true)
+  numberRangeStart Int?
+  numberRangeEnd   Int?
+  unitPriceCents   Int?
+  promotionRules   String?
+  drawResult       String?
+  drawnAt          DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  prizes       Prize[]
+  images       ActivityImage[]
+  numbers      RaffleNumber[]
+  participants ActivityParticipant[]
+  approvals    ComplianceApproval[]
+  ledger       LedgerTransaction[]
+
+  @@map("fundraising_activity")
+}
+
+model Prize {
+  id          String              @id @default(cuid())
+  activityId  String
+  activity    FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  name        String
+  description String?
+  costCents   Int                 @default(0)
+  position    Int                 @default(1)
+
+  @@map("prize")
+}
+
+model ActivityImage {
+  id         String              @id @default(cuid())
+  activityId String
+  activity   FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  fileId     String
+  file       FileUpload          @relation(fields: [fileId], references: [id], onDelete: Restrict)
+  caption    String?
+
+  @@map("activity_image")
+}
+
+model ActivityParticipant {
+  id            String              @id @default(cuid())
+  activityId    String
+  activity      FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  participantId String
+  participant   Participant         @relation(fields: [participantId], references: [id], onDelete: Restrict)
+  role          String? // ex.: "voluntário", "comprador"
+  createdAt     DateTime            @default(now())
+
+  @@unique([activityId, participantId])
+  @@map("activity_participant")
+}
+
+enum RaffleNumberStatus {
+  AVAILABLE
+  RESERVED
+  CONFIRMED
+}
+
+model RaffleNumber {
+  id            String              @id @default(cuid())
+  activityId    String
+  activity      FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  number        Int
+  status        RaffleNumberStatus  @default(AVAILABLE)
+  participantId String?
+  participant   Participant?        @relation(fields: [participantId], references: [id], onDelete: Restrict)
+  isSimulation  Boolean             @default(true)
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([activityId, number])
+  @@map("raffle_number")
+}
+
+model ComplianceApproval {
+  id             String              @id @default(cuid())
+  activityId     String
+  activity       FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  legalModality  String // modalidade legal identificada
+  authorization  String? // nº de autorização / processo
+  documentFileId String?
+  legalOpinion   String
+  decision       ComplianceStatus
+  decidedById    String
+  decidedBy      User                @relation(fields: [decidedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime            @default(now())
+
+  @@map("compliance_approval")
+}
+
+// -----------------------------------------------------------------------------
+// Pix (arquitetura preparada; somente manual/simulação na fase inicial)
+// -----------------------------------------------------------------------------
+
+enum PixChargeStatus {
+  CREATED
+  ACTIVE
+  PAID
+  EXPIRED
+  CANCELLED
+  REFUNDED
+  FAILED
+}
+
+model PixCharge {
+  id           String          @id @default(cuid())
+  provider     String // "manual" | "simulated" | futuro PSP
+  externalId   String // txid
+  paymentId    String?         @unique
+  payment      Payment?        @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  amountCents  Int
+  copyPaste    String?
+  qrCodeData   String?
+  status       PixChargeStatus @default(CREATED)
+  expiresAt    DateTime?
+  isSimulation Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([provider, externalId])
+  @@map("pix_charge")
+}
+
+model WebhookEvent {
+  id             String    @id @default(cuid())
+  provider       String
+  externalId     String // id do evento no provedor (idempotência)
+  signatureValid Boolean
+  payload        Json
+  processedAt    DateTime?
+  error          String?
+  receivedAt     DateTime  @default(now())
+
+  @@unique([provider, externalId])
+  @@map("webhook_event")
+}
+
+// -----------------------------------------------------------------------------
+// Diversos
+// -----------------------------------------------------------------------------
+
+model Announcement {
+  id          String    @id @default(cuid())
+  cycleId     String?
+  cycle       Cycle?    @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  title       String
+  body        String
+  publishedAt DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+
+  @@map("announcement")
+}
+
+model FileUpload {
+  id          String   @id @default(cuid())
+  storageKey  String   @unique
+  fileName    String
+  contentType String
+  sizeBytes   Int
+  sha256      String
+  uploadedById String
+  createdAt   DateTime @default(now())
+
+  payments       Payment[]
+  ledger         LedgerTransaction[]
+  activityImages ActivityImage[]
+
+  @@map("file_upload")
+}
+
+/// Chaves de ativação de recursos sensíveis. Todas começam DESLIGADAS.
+model FeatureFlag {
+  key         String   @id // RAFFLE_SALES_ENABLED | PIX_LIVE_ENABLED | ADMIN_PAYOUT_ENABLED
+  enabled     Boolean  @default(false)
+  justification String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("feature_flag")
+}
