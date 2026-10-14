@@ -46,11 +46,29 @@ pagamento → conferir/confirmar → livro-caixa) ✅ · páginas sem rolagem la
 | Saída no meio do ciclo | Parcelas seguintes deixam de ser devidas; devolução e resultados: **pendente (Fase 4)** |
 | Administrador participante | Outro administrador confirma; se único, justificativa obrigatória |
 
+## Fase 3 — Painéis ✅ (14/10/2026)
+
+Implementado e verificado:
+
+- **Painel do administrador:** saldo em caixa em destaque; participantes ativos, cotas, arrecadação prevista e
+  recebida, pendente em atraso, em análise; receitas, despesas, tributos e resultado parcial; **projeções** de
+  remuneração administrativa e do valor destinado aos participantes (estilo "projeção não garantida"); medidor de
+  adimplentes × inadimplentes com a lista de quem está em atraso.
+- **Gráficos** (com visão em tabela): contribuições por mês (recebido × previsto), entradas × saídas do caixa,
+  resultado parcial acumulado. **Filtros** de ciclo e período (atalhos: ciclo todo, últimos 6 e 3 meses).
+- **Participante:** Minha Caixinha no formato do enunciado (cotas, mensalidade, total depositado, resultados
+  atribuídos, saldo demonstrativo, próximo vencimento), **extrato** com saldo acumulado, **recibos em PDF** (valor
+  por extenso e código de verificação), **comunicados**, **prestação de contas coletiva** (sem dados individuais).
+- **Comunicados:** criação, rascunho/publicação, edição auditada, por grupo todo ou por ciclo.
+
+Verificações: `typecheck` ✅ · `lint` ✅ · `test` ✅ (178 testes) · `build` ✅ · painel, gráficos, recibo PDF,
+extrato, comunicados (incl. teste de XSS) e prestação de contas verificados no navegador ✅ · sem rolagem lateral em
+375 px ✅.
+
 ## Próximas fases
 
 | Fase | Escopo |
 | --- | --- |
-| 3 — Painéis | Dashboard com indicadores e gráficos (evolução mensal, entradas × saídas, adimplência, resultado acumulado), filtros por período/ciclo; extrato e recibos em PDF; comunicados |
 | 4 — Resultados | Apuração, remuneração administrativa, distribuição (saldo diário), conciliação com extrato, encerramento e correções pós-encerramento, relatórios PDF/Excel |
 | 5 — Arrecadação | Atividades, prêmios, imagens, custos, numeração em simulação, fluxo de conformidade |
 | 6 — Integrações | Pix manual/simulado (QR, copia e cola), webhooks idempotentes, conciliação, notificações |
@@ -76,3 +94,6 @@ pagamento → conferir/confirmar → livro-caixa) ✅ · páginas sem rolagem la
 - CSP ainda permite `'unsafe-inline'` em scripts; 2FA ainda não implementado; sem testes E2E automatizados (fluxo
   verificado manualmente no navegador).
 - Itens de menu das próximas fases aparecem como "em breve".
+- Painéis e gráficos apenas em tema claro (identidade visual do projeto).
+- Recibos usam a fonte Helvetica embutida no PDF (acentos do português suportados; sem emojis).
+- "Resultados atribuídos" do participante aparecem como R$ 0,00 até a apuração (Fase 4).

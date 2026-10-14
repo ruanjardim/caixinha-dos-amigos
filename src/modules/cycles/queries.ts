@@ -140,6 +140,7 @@ export async function getOwnMemberships(participantId: string) {
           amountCents: true,
           status: true,
           receivedAt: true,
+          reversedAt: true,
           method: true,
           createdAt: true,
           cancelReason: true,

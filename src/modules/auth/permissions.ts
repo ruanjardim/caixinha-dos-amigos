@@ -29,6 +29,7 @@ export const PERMISSIONS = [
   "compliance.decide",
   "ledger.read",
   "dashboard.admin",
+  "announcements.manage",
   // Participante (sempre restrito aos PRÓPRIOS dados)
   "self.dashboard",
   "self.statement",
@@ -72,6 +73,7 @@ const ADMIN_PERMISSIONS: readonly Permission[] = [
   "compliance.decide",
   "ledger.read",
   "dashboard.admin",
+  "announcements.manage",
 ];
 
 export const ROLE_PERMISSIONS: Readonly<Record<Role, ReadonlySet<Permission>>> = {

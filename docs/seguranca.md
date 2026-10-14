@@ -21,6 +21,9 @@
 | PWA | Service worker não armazena páginas nem dados financeiros em cache |
 | Comprovantes | Tipo verificado pelo CONTEÚDO (PDF/PNG/JPG/WEBP), máx. 5 MB, nome saneado, hash SHA-256, guardados fora da pasta pública, download com verificação de permissão e `Content-Disposition: attachment` + `nosniff` |
 | Pagamentos | Nunca confirmados automaticamente; anti-duplicidade em 3 níveis (idempotência, referência única no banco, alerta de mesmo valor/data); confirmação atômica |
+| Prestação de contas | Somente totais coletivos; contribuições agregadas por mês; nenhum nome ou valor individual (testado) |
+| Comunicados | Texto simples, exibido sem interpretar HTML (`<script>` aparece como texto — testado) |
+| Recibos | Só para pagamento confirmado, do próprio participante (ou admin); "não encontrado" para terceiros; código HMAC |
 | Ordem de verificação | Em toda ação: sessão/permissão ANTES de validar dados |
 
 ## Pendente (Fase 7)

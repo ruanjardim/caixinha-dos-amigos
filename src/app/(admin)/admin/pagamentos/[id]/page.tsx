@@ -85,6 +85,14 @@ export default async function PaymentPage({ params }: PageProps<"/admin/pagament
               </Item>
             )}
           </dl>
+          {p.status === "CONFIRMED" && (
+            <a
+              href={`/api/recibos/${p.id}`}
+              className="border-line hover:bg-canvas mt-5 mr-2 inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold"
+            >
+              <Download className="size-4" aria-hidden /> Baixar recibo (PDF)
+            </a>
+          )}
           {p.proofFile && (
             <a
               href={`/api/arquivos/${p.proofFile.id}`}

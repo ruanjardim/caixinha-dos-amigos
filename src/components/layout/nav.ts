@@ -33,15 +33,16 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/resultados", label: "Resultados", icon: Wallet, available: false },
   { href: "/admin/arrecadacao", label: "Arrecadação", icon: PartyPopper, available: false },
   { href: "/admin/relatorios", label: "Relatórios", icon: FileText, available: false },
-  { href: "/admin/comunicados", label: "Comunicados", icon: Megaphone, available: false },
+  { href: "/admin/comunicados", label: "Comunicados", icon: Megaphone, available: true },
   { href: "/admin/auditoria", label: "Auditoria", icon: ShieldCheck, available: true },
 ];
 
 export const PARTICIPANT_NAV: NavItem[] = [
   { href: "/minha-caixinha", label: "Início", icon: Home, available: true },
   { href: "/minha-caixinha/informar-pagamento", label: "Pagar", icon: HandCoins, available: true },
-  { href: "/minha-caixinha/regras", label: "Regras", icon: ScrollText, available: true },
+  { href: "/minha-caixinha/extrato", label: "Extrato", icon: Receipt, available: true },
+  { href: "/minha-caixinha/comunicados", label: "Avisos", icon: Megaphone, available: true },
   { href: "/minha-caixinha/perfil", label: "Perfil", icon: UserRound, available: true },
-  { href: "/minha-caixinha/extrato", label: "Extrato", icon: Receipt, available: false },
-  { href: "/minha-caixinha/comunicados", label: "Avisos", icon: Megaphone, available: false },
+  { href: "/minha-caixinha/prestacao-de-contas", label: "Prestação de contas", icon: BarChart3, available: true },
+  { href: "/minha-caixinha/regras", label: "Regras", icon: ScrollText, available: true },
 ];

@@ -124,7 +124,13 @@ export default async function LedgerPage({ searchParams }: PageProps<"/admin/liv
                   defaultValue={todayInBrazil()}
                   required
                 />
-                <Field label="Descrição" name="description" required placeholder="Ex.: tarifa bancária" />
+                <Field
+                  label="Descrição"
+                  name="description"
+                  required
+                  placeholder="Ex.: tarifa bancária"
+                  hint="Visível na prestação de contas: não inclua dados pessoais."
+                />
               </div>
               <p className="text-muted text-xs">
                 Contribuições entram automaticamente quando um pagamento é confirmado. Despesas não podem exceder o

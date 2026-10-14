@@ -32,7 +32,9 @@ Fonte da verdade: [`src/modules/auth/permissions.ts`](../src/modules/auth/permis
 | Informar pagamento (fica "em análise") | ✅¹ | ✅ |
 | Atualizar dados pessoais liberados | ✅¹ | ✅ |
 | Aceitar regras do ciclo | ✅¹ | ✅ |
-| Relatórios coletivos autorizados, comunicados | ✅ | ✅ |
+| Publicar comunicados | ✅ | — |
+| Relatórios coletivos autorizados (prestação de contas), ler comunicados | ✅ | ✅ |
+| Baixar recibo PDF | ✅ (qualquer pagamento confirmado) | ✅ (somente os próprios) |
 
 ¹ Somente se o administrador também tiver cadastro de participante vinculado, e apenas para os próprios dados.
 

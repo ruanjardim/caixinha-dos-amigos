@@ -39,6 +39,15 @@
   --color-info: #175cd3;
   --color-info-bg: #eff8ff;
 
+  /* Gráficos (paleta validada: CVD, contraste e brilho — ver docs/arquitetura.md) */
+  --color-chart-in: #039855; /* recebido / entradas */
+  --color-chart-out: #4a3aa7; /* saídas */
+  --color-chart-context: #8a9692; /* previsto (contexto) */
+  --color-chart-grid: #e3e9e6;
+  --color-chart-axis: #c3c2b7;
+  --color-status-good: #0ca30c;
+  --color-status-critical: #d03b3b;
+
   --radius-card: 1rem;
   --shadow-card: 0 1px 2px rgb(16 24 20 / 0.04), 0 1px 3px rgb(16 24 20 / 0.06);
 }
@@ -71,4 +80,13 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
+}
+
+/*
+ * Áreas com rolagem horizontal (tabelas) contêm seus elementos posicionados —
+ * inclusive textos só para leitores de tela (.sr-only), que de outro modo
+ * "escapariam" e criariam rolagem lateral na página inteira no celular.
+ */
+.overflow-x-auto {
+  position: relative;
 }

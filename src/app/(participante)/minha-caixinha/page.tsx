@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, FileSignature, HandCoins, Info, PiggyBank } from "lucide-react";
+import { CalendarClock, FileSignature, HandCoins, Info, Megaphone, PiggyBank } from "lucide-react";
 import { ContributionSummaryGrid, InstallmentsTable, SummaryCard } from "@/components/finance/contributions";
 import { PAYMENT_METHOD_LABEL, PaymentStatusBadge } from "@/components/finance/status-badges";
 import { Alert } from "@/components/ui/alert";
@@ -9,6 +9,7 @@ import { MoneyLegend, MoneyValue } from "@/components/ui/money-value";
 import { formatCompetence, formatDateBR, toISODate } from "@/domain/dates";
 import { formatBRL } from "@/domain/money";
 import { firstName } from "@/lib/format";
+import { recentAnnouncementForParticipant } from "@/modules/announcements/service";
 import { requirePagePermission } from "@/modules/auth/session";
 import { getOwnMemberships } from "@/modules/cycles/queries";
 
@@ -21,6 +22,7 @@ export default async function MyCaixinhaPage({ searchParams }: PageProps<"/minha
   // Somente os dados do PRÓPRIO participante (escopo pelo usuário logado).
   const memberships = user.participantId ? await getOwnMemberships(user.participantId) : [];
   const current = memberships.find((m) => m.cycle.status !== "CLOSED") ?? memberships[0];
+  const recent = await recentAnnouncementForParticipant(user.participantId);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -28,6 +30,19 @@ export default async function MyCaixinhaPage({ searchParams }: PageProps<"/minha
         <h1 className="text-2xl font-extrabold tracking-tight">Olá, {firstName(user.name)}!</h1>
         <p className="text-muted">Minha Caixinha{current ? ` · ${current.cycle.name}` : ""}</p>
       </header>
+
+      {recent && (
+        <Link
+          href="/minha-caixinha/comunicados"
+          className="border-line hover:bg-canvas flex items-start gap-3 rounded-xl border bg-white p-3.5 text-sm"
+        >
+          <Megaphone className="text-brand-600 mt-0.5 size-4 shrink-0" aria-hidden />
+          <span className="min-w-0">
+            <span className="block font-semibold">{recent.title}</span>
+            <span className="text-muted line-clamp-1">{recent.body}</span>
+          </span>
+        </Link>
+      )}
 
       {params.informado === "1" && (
         <Alert tone="success" title="Pagamento informado!">
@@ -117,6 +132,33 @@ function CurrentMembership({ m }: { m: OwnMembership }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Três naturezas de valor, sempre separadas: recebido, apurado e (nenhuma) projeção individual. */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="p-4">
+          <p className="text-muted text-xs font-semibold">Total depositado (confirmado)</p>
+          <MoneyValue cents={m.summary.receivedCents} kind="received" className="mt-1 block text-xl" />
+        </Card>
+        <Card className="p-4">
+          <p className="text-muted text-xs font-semibold">Resultados atribuídos</p>
+          <MoneyValue cents={0} kind="calculated" className="mt-1 block text-xl" />
+          <p className="text-muted mt-1 text-xs">Apurados só ao final do ciclo, conforme as regras.</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-muted text-xs font-semibold">Saldo demonstrativo</p>
+          <MoneyValue cents={m.summary.receivedCents} className="mt-1 block text-xl" />
+          <p className="text-muted mt-1 text-xs">Depositado + resultados já apurados.</p>
+        </Card>
+      </div>
+      <div className="flex flex-wrap gap-2 text-sm">
+        <Link href="/minha-caixinha/extrato" className="text-brand-700 font-semibold hover:underline">
+          Extrato e recibos
+        </Link>
+        <span className="text-line">·</span>
+        <Link href="/minha-caixinha/prestacao-de-contas" className="text-brand-700 font-semibold hover:underline">
+          Prestação de contas do grupo
+        </Link>
+      </div>
 
       {isDraft ? (
         <Alert tone="info">O ciclo ainda está em preparação. As parcelas aparecerão quando ele for aberto.</Alert>

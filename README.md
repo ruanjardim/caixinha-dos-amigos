@@ -4,7 +4,7 @@ Plataforma web para administrar a caixinha coletiva de um grupo privado: cotas m
 livro-caixa, prestação de contas e apuração/distribuição de resultados — com transparência para os participantes
 e rastreabilidade completa para a administração.
 
-> **Status:** Fases 1 (Fundação) e 2 (Gestão financeira) concluídas. Veja [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Fases 1 (Fundação), 2 (Gestão financeira) e 3 (Painéis) concluídas. Veja [docs/roadmap.md](docs/roadmap.md).
 >
 > A plataforma **não realiza investimentos** e **não promete rendimento**. Recursos sensíveis (Pix real, venda de
 > números de sorteio, pagamento da remuneração administrativa) ficam **desligados por padrão** até validação
@@ -20,6 +20,8 @@ e rastreabilidade completa para a administração.
 | Autenticação | Better Auth 1.7 — sessões no banco, senhas argon2id, rate limiting |
 | Validação    | Zod 4                                                              |
 | Interface    | Tailwind CSS 4, lucide-react, fonte Plus Jakarta Sans              |
+| Gráficos     | Recharts 3 (paleta validada para daltonismo e contraste)           |
+| Recibos PDF  | @react-pdf/renderer (gerados no servidor)                          |
 | PWA          | Manifest + service worker próprio (`public/sw.js`)                 |
 | Testes       | Vitest 5 (unitários + integração com o banco)                      |
 
