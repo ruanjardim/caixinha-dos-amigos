@@ -77,4 +77,5 @@ Exemplo — contribuição de R$ 100 confirmada:
 - `cycle_rules` congeladas não podem ser alteradas.
 - Apuração `APPROVED` não pode ser alterada (só marcada como `SUPERSEDED`).
 - `result_share`, `distribution`, `cash_reconciliation`: somente inclusão. Uma distribuição por participação (único); uma apuração aprovada por ciclo (índice único parcial).
+- `compliance_approval`: somente inclusão; `raffle_number`: nunca apagado e, depois de confirmado, imutável (status, dono, transação).
 - CHECKs: valores positivos, dia de vencimento 1–28, datas do ciclo em ordem, % administrativo entre 0 e 100%.

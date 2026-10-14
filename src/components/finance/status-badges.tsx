@@ -61,3 +61,29 @@ export function paymentStatusLabel(status: string) {
 export function cycleStatusLabel(status: string) {
   return CYCLE[status]?.label ?? status;
 }
+
+const ACTIVITY_STATUS: Record<string, { label: string; tone: Tone }> = {
+  DRAFT: { label: "Rascunho", tone: "gray" },
+  PLANNED: { label: "Planejada", tone: "blue" },
+  IN_PROGRESS: { label: "Em andamento", tone: "green" },
+  FINISHED: { label: "Concluída", tone: "gray" },
+  CANCELLED: { label: "Cancelada", tone: "red" },
+};
+
+const COMPLIANCE: Record<string, { label: string; tone: Tone }> = {
+  NOT_REQUIRED: { label: "Não exige parecer", tone: "gray" },
+  PENDING_REVIEW: { label: "Aguardando parecer", tone: "amber" },
+  APPROVED: { label: "Parecer favorável", tone: "green" },
+  REJECTED: { label: "Parecer contrário", tone: "red" },
+};
+
+export const ACTIVITY_TYPE_LABEL: Record<string, string> = {
+  EVENT: "Evento",
+  PRODUCT_SALE: "Venda de produtos",
+  DONATION: "Doação",
+  RAFFLE: "Sorteio",
+  OTHER: "Outra",
+};
+
+export const ActivityStatusBadge = make(ACTIVITY_STATUS);
+export const ComplianceBadge = make(COMPLIANCE);

@@ -23,6 +23,10 @@ const REPORTS: { type: ReportType; description: string }[] = [
     type: "prestacao-de-contas",
     description: "Versão coletiva, sem dados individuais (os participantes também emitem).",
   },
+  {
+    type: "atividades",
+    description: "Receitas, custos, resultado, conformidade e resultados oficiais de cada atividade.",
+  },
 ];
 
 export default async function ReportsPage({ searchParams }: PageProps<"/admin/relatorios">) {

@@ -10,8 +10,24 @@
 | `PIX_LIVE_ENABLED` | Cobrança Pix real por prestador de pagamentos | Estrutura jurídica (ex.: associação com CNPJ) e conta de recebimento adequada — **nunca conta pessoal** |
 | `ADMIN_PAYOUT_ENABLED` | Pagamento da remuneração administrativa | Validação jurídica e tributária |
 
-As chaves são criadas desligadas pela migration. A tela de ativação (Fase 5/6) exigirá registro de parecer,
-documento de autorização e responsável, gravados em `compliance_approval` e na auditoria.
+As chaves são criadas desligadas pela migration e só mudam na tela **Conformidade** (perfil administrador):
+ligar exige justificativa (≥ 30 caracteres, com base legal/parecer) e digitar `ATIVAR`; desligar exige motivo. Toda
+mudança fica na auditoria.
+
+## Atividades de arrecadação e sorteios (Fase 5)
+
+| Situação | O que o sistema permite |
+| --- | --- |
+| Sorteio recém-cadastrado | Somente **simulação**: cadastro, prêmios, imagens, numeração, reservas e "confirmações" sem dinheiro, sorteio simulado (não gravado, não oficial) |
+| Parecer de conformidade | Registro permanente (modalidade legal, autorização, parecer, documento, decisão); alterar regulamento, preço ou faixa depois de aprovado exige novo parecer |
+| Modo autorizado | Só com: parecer favorável **+** recurso "Venda de números" ligado **+** regulamento escrito **+** numeração ainda não gerada em simulação. A simulação nunca vira venda real |
+| Venda autorizada | Cada número pago exige identificação da transação (sem repetição) e gera receita no livro-caixa ligada à atividade |
+| Resultado | O sistema **não executa sorteio real**: registra uma única vez o resultado obtido pelo meio autorizado (ex.: Loteria Federal), com a fonte |
+| Parecer contrário | Bloqueia qualquer movimentação de dinheiro da atividade |
+
+Atividades comuns (evento, venda de produtos, doação) não exigem parecer e registram receitas e custos no
+livro-caixa, ligados à atividade (resultado por atividade visível a todos os participantes).
+
 
 ## Pontos de atenção identificados
 

@@ -68,11 +68,15 @@ export function toActionError(error: unknown): ActionState {
   return { ok: false, error: "Não foi possível concluir a operação. Tente novamente." };
 }
 
+/**
+ * Mensagem de uma regra do PRÓPRIO banco (gatilho com RAISE EXCEPTION, código P0001).
+ * Erros de validação do Prisma trazem trechos de código na mensagem: nunca são exibidos.
+ */
 function databaseRuleMessage(error: unknown): string | null {
-  const text = error instanceof Error ? error.message : "";
+  if (!(error instanceof Error) || error instanceof Prisma.PrismaClientValidationError) return null;
   const match =
-    /(Tabela .*|Exclusão definitiva .*|Lançamento .* desbalanceado.*|Ciclo .*|Regras do ciclo .*|Apuração .*|Pagamento .*|Transição .*)$/m.exec(
-      text,
+    /^.*?((?:Tabela |Exclusão definitiva |Lançamento \S+ desbalanceado|Ciclo |Regras do ciclo |Apuração |Pagamento |Transição |Número de sorteio )[^"`;{}()]*?\.)\s*$/m.exec(
+      error.message,
     );
   return match ? match[1].trim() : null;
 }

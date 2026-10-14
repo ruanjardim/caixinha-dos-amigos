@@ -84,11 +84,24 @@ Verificações: `typecheck` ✅ · `lint` ✅ · testes ✅ (inclui fluxo comple
 do ciclo, concorrência, relatórios e proteção contra fórmula no Excel) · `build` ✅ · encerramento completo de um
 ciclo de demonstração no navegador ✅ · relatórios PDF/Excel baixados ✅.
 
+## Fase 5 — Atividades de arrecadação ✅ (14/10/2026)
+
+- Cadastro de atividades (evento, venda, doação, sorteio, outra) com datas, descrição, imagens, prêmios e
+  participantes envolvidos; situação (rascunho → planejada → em andamento → concluída/cancelada).
+- Controle financeiro por atividade: receitas e custos lançados no livro-caixa ligados à atividade; resultado por
+  atividade; relatório "Atividades de arrecadação" (PDF/Excel).
+- Sorteios **desativados por padrão**: simulação completa (numeração, reservas, confirmações, sorteio simulado) sem
+  dinheiro; tela de Conformidade com pareceres e recursos sensíveis (justificativa + confirmação digitada); modo
+  autorizado só com todas as condições; resultado oficial apenas registrado, nunca executado.
+- Participante vê as atividades dos seus ciclos, os próprios números e os resultados.
+
+Verificações: testes ✅ (inclui simulação sem dinheiro, bloqueios de conformidade, transação repetida, resultado
+oficial único, imutabilidade no banco) · fluxo de simulação no navegador ✅ · participante vê só os próprios números ✅.
+
 ## Próximas fases
 
 | Fase | Escopo |
 | --- | --- |
-| 5 — Arrecadação | Atividades, prêmios, imagens, custos, numeração em simulação, fluxo de conformidade |
 | 6 — Integrações | Pix manual/simulado (QR, copia e cola), webhooks idempotentes, conciliação, notificações |
 | 7 — Qualidade | 2FA para administradores, CSP com nonce, testes E2E (Playwright), revisão de segurança, documentação final |
 

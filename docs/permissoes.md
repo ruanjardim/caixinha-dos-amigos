@@ -33,6 +33,8 @@ Fonte da verdade: [`src/modules/auth/permissions.ts`](../src/modules/auth/permis
 | Atualizar dados pessoais liberados | ✅¹ | ✅ |
 | Aceitar regras do ciclo | ✅¹ | ✅ |
 | Publicar comunicados | ✅ | — |
+| Atividades de arrecadação (cadastro, números, lançamentos) | ✅ | — (vê as atividades dos seus ciclos e os próprios números) |
+| Pareceres de conformidade e recursos sensíveis | ✅ | — |
 | Relatórios coletivos autorizados (prestação de contas), ler comunicados | ✅ | ✅ |
 | Relatórios consolidados (PDF/Excel) | ✅ | — |
 | Relatório de prestação de contas e extrato individual (PDF/Excel) | ✅ | ✅ (só do próprio ciclo / próprios dados) |

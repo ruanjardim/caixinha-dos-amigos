@@ -39,6 +39,8 @@ export type PostEntryInput = {
   reversesId?: string | null;
   /** Correção registrada após o encerramento do ciclo (procedimento auditável). */
   postClosing?: boolean;
+  /** Atividade de arrecadação relacionada (receitas e custos da atividade). */
+  activityId?: string | null;
 };
 
 /**
@@ -70,6 +72,7 @@ export async function postEntry(tx: DbTransaction, input: PostEntryInput) {
       paymentId: input.paymentId ?? null,
       reversesId: input.reversesId ?? null,
       postClosing: input.postClosing ?? false,
+      activityId: input.activityId ?? null,
     },
   });
   // Todas as linhas em UM comando: o banco confere a soma zero ao fim do INSERT.

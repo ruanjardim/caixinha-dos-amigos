@@ -10,6 +10,8 @@ import { formatDateTime } from "@/lib/format";
 import { getCycleDetail } from "@/modules/cycles/queries";
 import { getCollectiveReport } from "@/modules/dashboard/queries";
 import { getLedgerOverview } from "@/modules/ledger/service";
+import { listActivities } from "@/modules/fundraising/queries";
+import { ACTIVITY_TYPE_LABEL } from "@/components/finance/status-badges";
 import { REPORT_TITLES, type ReportDoc, type ReportSection, type ReportType } from "./types";
 
 const DISCLAIMER =
@@ -106,6 +108,8 @@ export async function buildReport(
       return closingReport(cycleId, today);
     case "prestacao-de-contas":
       return collectiveReport(cycleId, today);
+    case "atividades":
+      return activitiesReport(cycleId);
     case "extrato":
       if (!options.membershipId) throw new Error("Participação não informada.");
       return statementReport(options.membershipId);
@@ -648,5 +652,67 @@ async function statementReport(membershipId: string): Promise<ReportDoc> {
       },
     ],
     notes: ["Somente dinheiro efetivamente recebido e conferido. Pagamentos em análise não aparecem.", DISCLAIMER],
+  };
+}
+
+const ACTIVITY_STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Rascunho",
+  PLANNED: "Planejada",
+  IN_PROGRESS: "Em andamento",
+  FINISHED: "Concluída",
+  CANCELLED: "Cancelada",
+};
+const COMPLIANCE_LABEL: Record<string, string> = {
+  NOT_REQUIRED: "Não exige",
+  PENDING_REVIEW: "Aguardando parecer",
+  APPROVED: "Favorável",
+  REJECTED: "Contrário",
+};
+
+async function activitiesReport(cycleId: string): Promise<ReportDoc> {
+  const { cycle } = await loadCycle(cycleId);
+  const activities = await listActivities({ cycleId });
+  const rows = activities.map((a) => ({
+    atividade: a.title,
+    tipo: ACTIVITY_TYPE_LABEL[a.type] + (a.type === "RAFFLE" && a.simulationOnly ? " (simulação)" : ""),
+    situacao: ACTIVITY_STATUS_LABEL[a.status],
+    conformidade: COMPLIANCE_LABEL[a.complianceStatus],
+    receitas: a.financials.revenueCents,
+    custos: a.financials.costCents,
+    resultado: a.financials.revenueCents - a.financials.costCents,
+    sorteio: a.drawResult ? `${a.drawResult} (${a.drawSource ?? ""})` : "",
+  }));
+  const sum = (k: "receitas" | "custos" | "resultado") => rows.reduce((s, r) => s + r[k], 0);
+  return {
+    ...header("atividades", cycle.name),
+    summary: [
+      { label: "Atividades", value: rows.length, kind: "int" },
+      { label: "Receitas das atividades", value: sum("receitas"), kind: "money" },
+      { label: "Custos das atividades", value: sum("custos"), kind: "money" },
+      { label: "Resultado das atividades", value: sum("resultado"), kind: "money" },
+    ],
+    sections: [
+      {
+        title: "Atividades",
+        columns: [
+          { key: "atividade", label: "Atividade", kind: "text", width: 3 },
+          { key: "tipo", label: "Tipo", kind: "text", width: 1.8 },
+          { key: "situacao", label: "Situação", kind: "text" },
+          { key: "conformidade", label: "Conformidade", kind: "text" },
+          { key: "receitas", label: "Receitas", kind: "money" },
+          { key: "custos", label: "Custos", kind: "money" },
+          { key: "resultado", label: "Resultado", kind: "money" },
+          { key: "sorteio", label: "Resultado oficial", kind: "text", width: 3 },
+        ],
+        rows,
+        totals: { atividade: "Total", receitas: sum("receitas"), custos: sum("custos"), resultado: sum("resultado") },
+        emptyMessage: "Nenhuma atividade neste ciclo.",
+      },
+    ],
+    notes: [
+      "Sorteios pagos ficam desativados por padrão; atividades em simulação não movimentam dinheiro.",
+      "Resultados oficiais de sorteio são obtidos pelo meio autorizado e apenas registrados pelo sistema.",
+      DISCLAIMER,
+    ],
   };
 }

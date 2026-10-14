@@ -4,7 +4,7 @@ Plataforma web para administrar a caixinha coletiva de um grupo privado: cotas m
 livro-caixa, prestação de contas e apuração/distribuição de resultados — com transparência para os participantes
 e rastreabilidade completa para a administração.
 
-> **Status:** Fases 1 a 4 concluídas (fundação, gestão financeira, painéis e resultados). Veja [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Fases 1 a 5 concluídas (fundação, gestão financeira, painéis, resultados e arrecadação). Veja [docs/roadmap.md](docs/roadmap.md).
 >
 > A plataforma **não realiza investimentos** e **não promete rendimento**. Recursos sensíveis (Pix real, venda de
 > números de sorteio, pagamento da remuneração administrativa) ficam **desligados por padrão** até validação

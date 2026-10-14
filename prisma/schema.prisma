@@ -413,6 +413,7 @@ model LedgerTransaction {
 
   lines        LedgerLine[]
   distribution Distribution?
+  raffleNumber RaffleNumber?
 
   @@index([cycleId, occurredOn])
   @@map("ledger_transaction")
@@ -561,6 +562,12 @@ model FundraisingActivity {
   promotionRules   String?
   drawResult       String?
   drawnAt          DateTime?
+  /// Fonte do resultado oficial (ex.: extração da Loteria Federal nº X). O sistema NÃO executa sorteios reais.
+  drawSource       String?
+  drawRecordedById String?
+  startsOn         DateTime?        @db.Date
+  endsOn           DateTime?        @db.Date
+  createdById      String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -575,13 +582,15 @@ model FundraisingActivity {
 }
 
 model Prize {
-  id          String              @id @default(cuid())
-  activityId  String
-  activity    FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
-  name        String
-  description String?
-  costCents   Int                 @default(0)
-  position    Int                 @default(1)
+  id            String              @id @default(cuid())
+  activityId    String
+  activity      FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  name          String
+  description   String?
+  costCents     Int                 @default(0)
+  position      Int                 @default(1)
+  /// Número sorteado para este prêmio (somente resultado oficial registrado).
+  winningNumber Int?
 
   @@map("prize")
 }
@@ -617,15 +626,21 @@ enum RaffleNumberStatus {
 }
 
 model RaffleNumber {
-  id            String              @id @default(cuid())
-  activityId    String
-  activity      FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
-  number        Int
-  status        RaffleNumberStatus  @default(AVAILABLE)
-  participantId String?
-  participant   Participant?        @relation(fields: [participantId], references: [id], onDelete: Restrict)
-  isSimulation  Boolean             @default(true)
-  updatedAt     DateTime            @updatedAt
+  id                  String              @id @default(cuid())
+  activityId          String
+  activity            FundraisingActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  number              Int
+  status              RaffleNumberStatus  @default(AVAILABLE)
+  participantId       String?
+  participant         Participant?        @relation(fields: [participantId], references: [id], onDelete: Restrict)
+  isSimulation        Boolean             @default(true)
+  reservedAt          DateTime?
+  confirmedAt         DateTime?
+  /// Identificação da transação do pagamento do número (modo autorizado).
+  transactionRef      String?
+  ledgerTransactionId String?             @unique
+  ledgerTransaction   LedgerTransaction?  @relation(fields: [ledgerTransactionId], references: [id], onDelete: Restrict)
+  updatedAt           DateTime            @updatedAt
 
   @@unique([activityId, number])
   @@map("raffle_number")

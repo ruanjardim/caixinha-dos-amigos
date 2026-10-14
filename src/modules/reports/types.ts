@@ -38,6 +38,7 @@ export const REPORT_TYPES = [
   "distribuicao",
   "encerramento",
   "prestacao-de-contas",
+  "atividades",
   "extrato",
 ] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
@@ -52,6 +53,7 @@ export const REPORT_TITLES: Record<ReportType, string> = {
   distribuicao: "Distribuição dos resultados",
   encerramento: "Encerramento anual",
   "prestacao-de-contas": "Prestação de contas coletiva",
+  atividades: "Atividades de arrecadação",
   extrato: "Extrato individual",
 };
 
