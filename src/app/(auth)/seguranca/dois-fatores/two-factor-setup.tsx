@@ -56,7 +56,7 @@ export function TwoFactorSetup({ homePath }: { homePath: string }) {
 
   if (!setup) {
     return (
-      <form onSubmit={start} className="space-y-4" noValidate>
+      <form method="post" onSubmit={start} className="space-y-4" noValidate>
         {error && <Alert tone="error">{error}</Alert>}
         <Field label="Confirme a sua senha" name="password" type="password" autoComplete="current-password" required />
         <Button type="submit" className="w-full" size="lg" loading={pending}>
@@ -109,7 +109,7 @@ export function TwoFactorSetup({ homePath }: { homePath: string }) {
         </label>
       </div>
 
-      <form onSubmit={confirm} className="space-y-4" noValidate>
+      <form method="post" onSubmit={confirm} className="space-y-4" noValidate>
         {error && <Alert tone="error">{error}</Alert>}
         <Field
           label="Código de 6 dígitos"
@@ -148,7 +148,7 @@ export function DisableTwoFactor() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="border-line space-y-3 rounded-xl border p-4" noValidate>
+    <form method="post" onSubmit={onSubmit} className="border-line space-y-3 rounded-xl border p-4" noValidate>
       <p className="text-sm font-semibold">Desativar</p>
       {error && <Alert tone="error">{error}</Alert>}
       <Field label="Senha" name="password" type="password" autoComplete="current-password" required />

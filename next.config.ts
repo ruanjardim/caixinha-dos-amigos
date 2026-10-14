@@ -26,14 +26,6 @@ const nextConfig: NextConfig = {
     // Comprovantes de até 5 MB enviados por Server Actions.
     serverActions: { bodySizeLimit: "6mb" },
   },
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

@@ -37,7 +37,7 @@ export default function RecoverPasswordPage() {
           Se o e-mail estiver cadastrado, você receberá um link válido por 1 hora.
         </Alert>
       ) : (
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form method="post" onSubmit={onSubmit} className="space-y-4">
           {limited && <Alert tone="warning">Muitos pedidos seguidos. Aguarde alguns minutos.</Alert>}
           <Field label="E-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
           <Button type="submit" className="w-full" size="lg" loading={pending}>

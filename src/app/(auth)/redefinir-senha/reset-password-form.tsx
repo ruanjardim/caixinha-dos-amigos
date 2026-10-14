@@ -45,7 +45,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form method="post" onSubmit={onSubmit} className="space-y-4">
       {error && <Alert tone="error">{error}</Alert>}
       <Field label="Nova senha" name="password" type="password" autoComplete="new-password" minLength={MIN} required />
       <Field label="Confirme a nova senha" name="confirm" type="password" autoComplete="new-password" required />

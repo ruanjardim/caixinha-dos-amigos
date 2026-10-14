@@ -79,7 +79,7 @@ export function LoginForm() {
 
   if (step === "code") {
     return (
-      <form onSubmit={onCode} className="space-y-4" noValidate>
+      <form method="post" onSubmit={onCode} className="space-y-4" noValidate>
         <Alert tone="info" title="Verificação em duas etapas">
           {useBackupCode
             ? "Digite um dos códigos de recuperação que você guardou. Cada código só pode ser usado uma vez."
@@ -127,7 +127,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onPassword} className="space-y-4" noValidate>
+    <form method="post" onSubmit={onPassword} className="space-y-4" noValidate>
       {error && <Alert tone="error">{error}</Alert>}
       <Field label="E-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
       <Field label="Senha" name="password" type="password" autoComplete="current-password" required />

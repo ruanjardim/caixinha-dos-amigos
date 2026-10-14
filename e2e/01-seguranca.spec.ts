@@ -2,6 +2,27 @@ import { expect, test } from "@playwright/test";
 import { credentials, signIn } from "./support";
 
 test.describe("segurança básica", () => {
+  test("formulário de login nunca envia credenciais pela URL sem JavaScript", async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
+    const page = await context.newPage();
+    const navigations: Array<{ method: string; url: string }> = [];
+    page.on("request", (request) => {
+      if (request.isNavigationRequest()) navigations.push({ method: request.method(), url: request.url() });
+    });
+
+    await page.goto("/login");
+    await page.getByLabel("E-mail").fill("participante@caixinha.local");
+    await page.getByLabel("Senha").fill("segredo-que-nao-pode-ir-na-url");
+    await page.getByRole("button", { name: "Entrar" }).click();
+
+    const submission = navigations.at(-1);
+    expect(submission?.method).toBe("POST");
+    expect(submission?.url).not.toContain("password=");
+    expect(submission?.url).not.toContain("segredo-que-nao-pode-ir-na-url");
+    expect(page.url()).not.toContain("segredo-que-nao-pode-ir-na-url");
+    await context.close();
+  });
+
   test("páginas usam CSP com nonce (sem 'unsafe-inline' em scripts) e bloqueiam iframes", async ({ page }) => {
     const response = await page.goto("/login");
     const headers = response!.headers();

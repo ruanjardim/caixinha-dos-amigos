@@ -105,7 +105,7 @@ export async function cleanupOrphanUploads(now: Date = new Date(), dir: string =
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
   }
-  const candidates = names.filter((n) => /^[0-9a-f-]{36}.(pdf|png|jpg|webp)$/.test(n));
+  const candidates = names.filter((n) => /^[0-9a-f-]{36}\.(pdf|png|jpg|webp)$/.test(n));
   if (candidates.length > 0) {
     const known = new Set(
       (await db.fileUpload.findMany({ where: { storageKey: { in: candidates } }, select: { storageKey: true } })).map(
