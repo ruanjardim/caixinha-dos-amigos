@@ -22,6 +22,8 @@ import {
   updateDraftMembershipAction,
 } from "@/modules/cycles/actions";
 import { getMembershipDetail } from "@/modules/cycles/queries";
+import { returnPrincipalAction } from "@/modules/results/actions";
+import { principalByMembership } from "@/modules/results/queries";
 
 export const metadata = { title: "Participação no ciclo" };
 
@@ -38,6 +40,8 @@ export default async function MembershipPage({ params }: PageProps<"/admin/ciclo
   const isOpen = m.cycle.status === "OPEN";
   const futureCompetences = m.summary.installments.filter((i) => i.dueDate >= today).map((i) => i.competence);
   const canPay = isOpen || m.cycle.status === "CONTRIBUTIONS_CLOSED";
+  const principalHeld = (await principalByMembership(m.cycleId)).get(m.id) ?? 0;
+  const canReturnPrincipal = m.status === "LEFT" && canPay && principalHeld > 0;
 
   return (
     <div className="space-y-6">
@@ -234,6 +238,30 @@ export default async function MembershipPage({ params }: PageProps<"/admin/ciclo
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {canReturnPrincipal && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Devolver o principal (saída do ciclo)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ActionForm
+              action={returnPrincipalAction}
+              submitLabel={`Registrar devolução de ${formatBRL(principalHeld)}`}
+              confirm={`Registrar a devolução de ${formatBRL(principalHeld)} a ${m.participant.fullName}?`}
+            >
+              <input type="hidden" name="membershipId" value={m.id} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Data do pagamento" name="paidOn" type="date" defaultValue={today} max={today} required />
+                <Field label="Referência (opcional)" name="transactionRef" />
+              </div>
+              <p className="text-muted text-xs">
+                Regra 6.2: quem sai recebe o valor depositado e participa do resultado só pelos dias até a devolução.
+              </p>
+            </ActionForm>
+          </CardContent>
+        </Card>
       )}
 
       {m.changes.length > 0 && (

@@ -120,5 +120,9 @@ export function ledgerOverview(b: LedgerBalances) {
     taxCents,
     /** Resultado PARCIAL (não apurado): receitas − despesas − tributos. */
     partialResultCents: revenueCents - expenseCents - taxCents,
+    /** Resultado já pago aos participantes (negativo = prejuízo já absorvido). */
+    distributedResultCents: b.RESULT_TO_DISTRIBUTE + 0,
+    /** Remuneração administrativa já paga. */
+    adminFeePaidCents: b.ADMIN_FEE + 0,
   };
 }

@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   // Pacotes nativos/servidor que não devem ser empacotados.
-  serverExternalPackages: ["@node-rs/argon2", "pg", "@react-pdf/renderer"],
+  serverExternalPackages: ["@node-rs/argon2", "pg", "@react-pdf/renderer", "exceljs"],
   experimental: {
     // Comprovantes de até 5 MB enviados por Server Actions.
     serverActions: { bodySizeLimit: "6mb" },

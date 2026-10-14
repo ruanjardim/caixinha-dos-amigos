@@ -48,10 +48,10 @@ model User {
   accounts    Account[]
   participant Participant?
 
-  auditLogs           AuditLog[]          @relation("AuditActor")
-  confirmedPayments   Payment[]           @relation("PaymentConfirmedBy")
-  registeredPayments  Payment[]           @relation("PaymentRegisteredBy")
-  ledgerTransactions  LedgerTransaction[] @relation("LedgerCreatedBy")
+  auditLogs           AuditLog[]           @relation("AuditActor")
+  confirmedPayments   Payment[]            @relation("PaymentConfirmedBy")
+  registeredPayments  Payment[]            @relation("PaymentRegisteredBy")
+  ledgerTransactions  LedgerTransaction[]  @relation("LedgerCreatedBy")
   complianceApprovals ComplianceApproval[]
 
   @@map("user")
@@ -324,33 +324,33 @@ enum PaymentStatus {
 }
 
 model Payment {
-  id             String        @id @default(cuid())
-  membershipId   String
-  membership     Membership    @relation(fields: [membershipId], references: [id], onDelete: Restrict)
-  amountCents    Int
+  id               String        @id @default(cuid())
+  membershipId     String
+  membership       Membership    @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  amountCents      Int
   /// Data de crédito efetivo na conta da caixinha (base do cálculo de resultados).
-  receivedAt     DateTime?     @db.Date
-  method         PaymentMethod
-  transactionRef String?
-  status         PaymentStatus @default(PENDING)
-  notes          String?
+  receivedAt       DateTime?     @db.Date
+  method           PaymentMethod
+  transactionRef   String?
+  status           PaymentStatus @default(PENDING)
+  notes            String?
   /// Quem registrou: o próprio participante (informou) ou um administrador.
-  registeredById String?
-  registeredBy   User?         @relation("PaymentRegisteredBy", fields: [registeredById], references: [id], onDelete: Restrict)
-  confirmedById  String?
-  confirmedBy    User?         @relation("PaymentConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
-  confirmedAt    DateTime?
+  registeredById   String?
+  registeredBy     User?         @relation("PaymentRegisteredBy", fields: [registeredById], references: [id], onDelete: Restrict)
+  confirmedById    String?
+  confirmedBy      User?         @relation("PaymentConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  confirmedAt      DateTime?
   /// Justificativa obrigatória quando o administrador confirma o próprio pagamento.
   confirmationNote String?
-  cancelledAt    DateTime?
-  cancelReason   String?
-  reversedAt     DateTime?     @db.Date
-  reversalReason String?
-  idempotencyKey String?       @unique
-  proofFileId    String?
-  proofFile      FileUpload?   @relation(fields: [proofFileId], references: [id], onDelete: SetNull)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  cancelledAt      DateTime?
+  cancelReason     String?
+  reversedAt       DateTime?     @db.Date
+  reversalReason   String?
+  idempotencyKey   String?       @unique
+  proofFileId      String?
+  proofFile        FileUpload?   @relation(fields: [proofFileId], references: [id], onDelete: SetNull)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   pixCharge PixCharge?
 
@@ -391,27 +391,28 @@ enum LedgerCategory {
 
 /// Cabeçalho de lançamento. Soma das linhas deve ser zero.
 model LedgerTransaction {
-  id          String         @id @default(cuid())
-  cycleId     String
-  cycle       Cycle          @relation(fields: [cycleId], references: [id], onDelete: Restrict)
-  occurredOn  DateTime       @db.Date
-  category    LedgerCategory
-  description String
-  createdById String
-  createdBy   User           @relation("LedgerCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  paymentId   String?        @unique
-  reversesId  String?        @unique
-  reverses    LedgerTransaction?  @relation("Reversal", fields: [reversesId], references: [id], onDelete: Restrict)
-  reversedBy  LedgerTransaction?  @relation("Reversal")
-  activityId  String?
-  activity    FundraisingActivity? @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  id           String               @id @default(cuid())
+  cycleId      String
+  cycle        Cycle                @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  occurredOn   DateTime             @db.Date
+  category     LedgerCategory
+  description  String
+  createdById  String
+  createdBy    User                 @relation("LedgerCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  paymentId    String?              @unique
+  reversesId   String?              @unique
+  reverses     LedgerTransaction?   @relation("Reversal", fields: [reversesId], references: [id], onDelete: Restrict)
+  reversedBy   LedgerTransaction?   @relation("Reversal")
+  activityId   String?
+  activity     FundraisingActivity? @relation(fields: [activityId], references: [id], onDelete: Restrict)
   attachmentId String?
-  attachment  FileUpload?    @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+  attachment   FileUpload?          @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
   /// Lançamento feito após o encerramento do ciclo (procedimento de correção auditável).
-  postClosing Boolean        @default(false)
-  createdAt   DateTime       @default(now())
+  postClosing  Boolean              @default(false)
+  createdAt    DateTime             @default(now())
 
-  lines LedgerLine[]
+  lines        LedgerLine[]
+  distribution Distribution?
 
   @@index([cycleId, occurredOn])
   @@map("ledger_transaction")
@@ -432,16 +433,16 @@ model LedgerLine {
 }
 
 model CashReconciliation {
-  id                 String   @id @default(cuid())
-  cycleId            String
-  cycle              Cycle    @relation(fields: [cycleId], references: [id], onDelete: Restrict)
-  referenceDate      DateTime @db.Date
-  bookBalanceCents   Int // saldo contábil (conta CASH)
+  id                    String   @id @default(cuid())
+  cycleId               String
+  cycle                 Cycle    @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  referenceDate         DateTime @db.Date
+  bookBalanceCents      Int // saldo contábil (conta CASH)
   statementBalanceCents Int // saldo informado no extrato
-  differenceCents    Int
-  notes              String?
-  createdById        String
-  createdAt          DateTime @default(now())
+  differenceCents       Int
+  notes                 String?
+  createdById           String
+  createdAt             DateTime @default(now())
 
   @@map("cash_reconciliation")
 }
@@ -457,25 +458,25 @@ enum ResultStatus {
 }
 
 model ResultCalculation {
-  id                    String       @id @default(cuid())
-  cycleId               String
-  cycle                 Cycle        @relation(fields: [cycleId], references: [id], onDelete: Restrict)
-  cycleRulesId          String
-  cycleRules            CycleRules   @relation(fields: [cycleRulesId], references: [id], onDelete: Restrict)
-  cutoffDate            DateTime     @db.Date
-  revenueCents          Int
-  expenseCents          Int
-  taxCents              Int
-  netResultCents        Int
-  adminFeeCents         Int
-  distributableCents    Int
-  availableCashCents    Int
-  inputSnapshot         Json // entradas completas usadas no cálculo
-  contentHash           String
-  status                ResultStatus @default(DRAFT)
-  approvedById          String?
-  approvedAt            DateTime?
-  createdAt             DateTime     @default(now())
+  id                 String       @id @default(cuid())
+  cycleId            String
+  cycle              Cycle        @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  cycleRulesId       String
+  cycleRules         CycleRules   @relation(fields: [cycleRulesId], references: [id], onDelete: Restrict)
+  cutoffDate         DateTime     @db.Date
+  revenueCents       Int
+  expenseCents       Int
+  taxCents           Int
+  netResultCents     Int
+  adminFeeCents      Int
+  distributableCents Int
+  availableCashCents Int
+  inputSnapshot      Json // entradas completas usadas no cálculo
+  contentHash        String
+  status             ResultStatus @default(DRAFT)
+  approvedById       String?
+  approvedAt         DateTime?
+  createdAt          DateTime     @default(now())
 
   shares ResultShare[]
 
@@ -483,32 +484,35 @@ model ResultCalculation {
 }
 
 model ResultShare {
-  id                 String            @id @default(cuid())
-  calculationId      String
-  calculation        ResultCalculation @relation(fields: [calculationId], references: [id], onDelete: Restrict)
-  membershipId       String
-  membership         Membership        @relation(fields: [membershipId], references: [id], onDelete: Restrict)
-  principalCents     Int
+  id             String            @id @default(cuid())
+  calculationId  String
+  calculation    ResultCalculation @relation(fields: [calculationId], references: [id], onDelete: Restrict)
+  membershipId   String
+  membership     Membership        @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  principalCents Int
   /// Peso = Σ(valor em centavos × dias disponíveis). BigInt para evitar overflow.
-  weight             BigInt
-  shareCents         Int
+  weight         BigInt
+  shareCents     Int
 
-  distributions Distribution[]
+  distribution Distribution?
 
   @@unique([calculationId, membershipId])
   @@map("result_share")
 }
 
+/// Pagamento ao participante no encerramento (principal + participação). Um por participação. Append-only.
 model Distribution {
-  id               String      @id @default(cuid())
-  shareId          String
-  share            ResultShare @relation(fields: [shareId], references: [id], onDelete: Restrict)
-  principalCents   Int
-  resultCents      Int
-  paidOn           DateTime    @db.Date
-  transactionRef   String?
-  createdById      String
-  createdAt        DateTime    @default(now())
+  id                  String             @id @default(cuid())
+  shareId             String             @unique
+  share               ResultShare        @relation(fields: [shareId], references: [id], onDelete: Restrict)
+  principalCents      Int
+  resultCents         Int
+  paidOn              DateTime           @db.Date
+  transactionRef      String?
+  ledgerTransactionId String?            @unique
+  ledgerTransaction   LedgerTransaction? @relation(fields: [ledgerTransactionId], references: [id], onDelete: Restrict)
+  createdById         String
+  createdAt           DateTime           @default(now())
 
   @@map("distribution")
 }
@@ -708,14 +712,14 @@ model Announcement {
 }
 
 model FileUpload {
-  id          String   @id @default(cuid())
-  storageKey  String   @unique
-  fileName    String
-  contentType String
-  sizeBytes   Int
-  sha256      String
+  id           String   @id @default(cuid())
+  storageKey   String   @unique
+  fileName     String
+  contentType  String
+  sizeBytes    Int
+  sha256       String
   uploadedById String
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   payments       Payment[]
   ledger         LedgerTransaction[]
@@ -726,11 +730,11 @@ model FileUpload {
 
 /// Chaves de ativação de recursos sensíveis. Todas começam DESLIGADAS.
 model FeatureFlag {
-  key         String   @id // RAFFLE_SALES_ENABLED | PIX_LIVE_ENABLED | ADMIN_PAYOUT_ENABLED
-  enabled     Boolean  @default(false)
+  key           String   @id // RAFFLE_SALES_ENABLED | PIX_LIVE_ENABLED | ADMIN_PAYOUT_ENABLED
+  enabled       Boolean  @default(false)
   justification String?
-  updatedById String?
-  updatedAt   DateTime @updatedAt
+  updatedById   String?
+  updatedAt     DateTime @updatedAt
 
   @@map("feature_flag")
 }

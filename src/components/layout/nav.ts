@@ -30,9 +30,9 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/ciclos", label: "Ciclos e cotas", icon: CalendarRange, available: true },
   { href: "/admin/pagamentos", label: "Pagamentos", icon: HandCoins, available: true },
   { href: "/admin/livro-caixa", label: "Livro-caixa", icon: BookOpenCheck, available: true },
-  { href: "/admin/resultados", label: "Resultados", icon: Wallet, available: false },
+  { href: "/admin/resultados", label: "Resultados", icon: Wallet, available: true },
   { href: "/admin/arrecadacao", label: "Arrecadação", icon: PartyPopper, available: false },
-  { href: "/admin/relatorios", label: "Relatórios", icon: FileText, available: false },
+  { href: "/admin/relatorios", label: "Relatórios", icon: FileText, available: true },
   { href: "/admin/comunicados", label: "Comunicados", icon: Megaphone, available: true },
   { href: "/admin/auditoria", label: "Auditoria", icon: ShieldCheck, available: true },
 ];

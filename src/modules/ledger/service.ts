@@ -37,6 +37,8 @@ export type PostEntryInput = {
   createdById: string;
   paymentId?: string | null;
   reversesId?: string | null;
+  /** Correção registrada após o encerramento do ciclo (procedimento auditável). */
+  postClosing?: boolean;
 };
 
 /**
@@ -67,6 +69,7 @@ export async function postEntry(tx: DbTransaction, input: PostEntryInput) {
       createdById: input.createdById,
       paymentId: input.paymentId ?? null,
       reversesId: input.reversesId ?? null,
+      postClosing: input.postClosing ?? false,
     },
   });
   // Todas as linhas em UM comando: o banco confere a soma zero ao fim do INSERT.
@@ -93,8 +96,13 @@ async function assertCycleAcceptsEntries(tx: DbTransaction, cycleId: string) {
   const cycle = await tx.cycle.findUnique({ where: { id: cycleId }, select: { status: true } });
   if (!cycle) throw new DomainError("Ciclo não encontrado.");
   if (cycle.status === "DRAFT") throw new DomainError("Ciclo em preparação ainda não aceita lançamentos.");
+  if (cycle.status === "SETTLING") {
+    throw new DomainError(
+      "Apuração aprovada: novos lançamentos só depois do encerramento, como correção pós-encerramento.",
+    );
+  }
   if (cycle.status === "CLOSED") {
-    throw new DomainError("Ciclo encerrado: correções seguem o procedimento pós-encerramento (Fase 4).");
+    throw new DomainError("Ciclo encerrado: use a correção pós-encerramento (com justificativa).");
   }
 }
 

@@ -1,4 +1,5 @@
 import { Download, FileText, Receipt } from "lucide-react";
+import { DownloadLink } from "@/components/ui/download-link";
 import { SummaryCard } from "@/components/finance/contributions";
 import { PAYMENT_METHOD_LABEL, PaymentStatusBadge } from "@/components/finance/status-badges";
 import { Alert } from "@/components/ui/alert";
@@ -10,12 +11,14 @@ import { formatBRL } from "@/domain/money";
 import { buildStatement } from "@/domain/statement";
 import { requirePagePermission } from "@/modules/auth/session";
 import { getOwnMemberships } from "@/modules/cycles/queries";
+import { getOwnResult } from "@/modules/results/queries";
 
 export const metadata = { title: "Extrato" };
 
 export default async function StatementPage() {
   const user = await requirePagePermission("self.statement");
   const memberships = user.participantId ? await getOwnMemberships(user.participantId) : [];
+  const results = await Promise.all(memberships.map((m) => getOwnResult(m.id)));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -32,7 +35,8 @@ export default async function StatementPage() {
         </Card>
       )}
 
-      {memberships.map((m) => {
+      {memberships.map((m, index) => {
+        const result = results[index];
         const statement = buildStatement(
           m.payments.map((p) => ({
             id: p.id,
@@ -50,11 +54,32 @@ export default async function StatementPage() {
         return (
           <section key={m.id} className="space-y-4" aria-label={m.cycle.name}>
             <div className="flex items-end justify-between gap-3">
-              <h2 className="text-lg font-bold">{m.cycle.name}</h2>
-              <p className="text-sm">
-                <span className="text-muted">Total recebido: </span>
-                <MoneyValue cents={balance} kind="received" />
-              </p>
+              <div className="space-y-2">
+                <h2 className="text-lg font-bold">{m.cycle.name}</h2>
+                <div className="flex gap-2">
+                  <DownloadLink href={`/api/relatorios/extrato?ciclo=${m.cycleId}&formato=pdf`} icon="pdf" />
+                  <DownloadLink href={`/api/relatorios/extrato?ciclo=${m.cycleId}&formato=xlsx`} icon="xlsx" />
+                </div>
+              </div>
+              <div className="space-y-0.5 text-right text-sm">
+                <p>
+                  <span className="text-muted">Total recebido: </span>
+                  <MoneyValue cents={balance} kind="received" />
+                </p>
+                {result && (
+                  <>
+                    <p>
+                      <span className="text-muted">Resultado apurado: </span>
+                      <MoneyValue cents={result.shareCents} kind="calculated" />
+                    </p>
+                    <p className="text-muted text-xs">
+                      {result.distribution
+                        ? `Recebido em ${formatDateBR(toISODate(result.distribution.paidOn))}: ${formatBRL(result.distribution.principalCents + result.distribution.resultCents)}`
+                        : "Pagamento no encerramento do ciclo."}
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
 
             <SummaryCard>

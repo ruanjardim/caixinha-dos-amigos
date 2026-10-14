@@ -1,7 +1,7 @@
 # Cálculos financeiros
 
-> Status: seções 1–2 e livro-caixa **implementados e testados** (Fase 2: `src/domain/money.ts`, `dates.ts`,
-> `installments.ts`, `contributions.ts`, `ledger.ts`). Seções 3–5 (apuração e distribuição) serão implementadas na Fase 4.
+> Status: **todas as seções implementadas e testadas** (`src/domain/money.ts`, `dates.ts`, `installments.ts`,
+> `contributions.ts`, `ledger.ts`, `distribution.ts` — política `v1-2026-10-14`).
 
 ## 1. Dinheiro
 
@@ -93,7 +93,36 @@ Ciclo de 01/12/2026 a 30/11/2027, data de corte 01/12/2027, resultado líquido R
 Total: R$ 1.260,00. Os dois contribuíram com o mesmo valor; Ana recebe mais porque o dinheiro dela ficou disponível
 por mais tempo, conforme as regras aprovadas.
 
-## Decisões pendentes (ver roadmap)
+## 6. Decisões do grupo (política v1, 14/10/2026)
 
-Tratamento de resultado negativo; data de corte; antecipação antes do início do ciclo; data de referência
-(crédito × confirmação); saída no meio do ciclo; mudança de cotas no meio do ciclo.
+| Tema | Regra |
+| --- | --- |
+| Data de corte | Fim das contribuições. Conta-se até o dia seguinte a ela (exclusivo): crédito em 01/12/2026 e fim em 30/11/2027 = 365 dias |
+| Pagamento antes do início do ciclo | Conta dias a partir do início do ciclo |
+| Estornos e devoluções | Subtraem a partir da sua data (o valor conta só pelos dias em que ficou na caixinha) |
+| Pagamento após a data de corte | Não gera peso; o principal continua devido |
+| Resultado negativo (prejuízo) | Sem remuneração administrativa; rateado proporcionalmente ao principal mantido na caixinha na apuração (quem já recebeu o principal ao sair não é cobrado) |
+| Saída no meio do ciclo | Principal devolvido na saída; participa do resultado só pelos dias até a devolução |
+
+Essas regras constam do texto padrão das regras (cláusulas 6, 6.1 e 6.2) e são aceitas pelos participantes.
+
+## 7. Fluxo de apuração
+
+1. **Encerrar contribuições** (após a data de fim).
+2. Resolver pagamentos em análise, devolver principal de quem saiu, **conciliar o caixa** com o extrato.
+3. **Calcular** (rascunho): usa o livro-caixa e as regras congeladas; gera participações e código de integridade
+   (SHA-256 do snapshot). Recalcular substitui o rascunho.
+4. **Aprovar**: só se nada mudou no livro-caixa desde o cálculo; a apuração fica imutável (gatilho no banco) e o ciclo
+   passa a "em distribuição". Só pode haver uma apuração aprovada por ciclo.
+5. **Distribuir**: um pagamento por participante (principal + resultado, ou principal − prejuízo), lançado no
+   livro-caixa (`PARTICIPANT_PRINCIPAL` + `RESULT_TO_DISTRIBUTE` contra `CASH`).
+6. **Remuneração administrativa**: só pode ser paga com o recurso liberado (validação jurídica e tributária). Até lá,
+   fica retida no caixa.
+7. **Encerrar** quando todos receberam. Depois, só **correções pós-encerramento** (com justificativa ≥ 20
+   caracteres, marcadas e auditadas) — que não alteram a apuração aprovada.
+
+### Exemplo verificado no sistema (ciclo de demonstração 2025)
+
+João depositou R$ 2.400 em 05/01/2025 (361 dias → peso 866.400); Maria, R$ 600 em 10/01 e R$ 600 em 10/07
+(356 + 175 dias → peso 318.600). Receitas R$ 500, despesas R$ 50 → resultado R$ 450; remuneração 10% = R$ 45;
+distribuível R$ 405 → João R$ 296,11 (73,11%), Maria R$ 108,89 (26,89%). Pagamentos: R$ 2.696,11 e R$ 1.308,89.

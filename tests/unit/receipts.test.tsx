@@ -60,3 +60,12 @@ describe("PDF do recibo", () => {
     expect(pdf.length).toBeGreaterThan(1000);
   }, 30_000);
 });
+
+describe("texto seguro para PDF", () => {
+  it("troca caracteres que a fonte do PDF não tem", async () => {
+    const { pdfText } = await import("@/modules/reports/format");
+    expect(pdfText("Peso = Σ (valor × dias)")).toBe("Peso = soma de (valor × dias)");
+    expect(pdfText("receitas − despesas")).toBe("receitas - despesas");
+    expect(pdfText("João — Ação · 10%")).toBe("João — Ação · 10%"); // suportados ficam
+  });
+});

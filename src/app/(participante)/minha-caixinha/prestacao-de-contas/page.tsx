@@ -4,6 +4,7 @@ import { CashFlowChart } from "@/components/charts/finance-charts";
 import { SummaryCard } from "@/components/finance/contributions";
 import { CATEGORY_LABEL } from "@/components/finance/ledger-labels";
 import { Alert } from "@/components/ui/alert";
+import { DownloadLink } from "@/components/ui/download-link";
 import { Card } from "@/components/ui/card";
 import { MoneyLegend } from "@/components/ui/money-value";
 import { EmptyState, PageHeader } from "@/components/ui/page-header";
@@ -93,7 +94,19 @@ export default async function CollectiveReportPage({ searchParams }: PageProps<"
               hint="Só sobre resultado positivo"
             />
           </section>
-          <MoneyLegend />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <MoneyLegend />
+            <div className="flex gap-2">
+              <DownloadLink
+                href={`/api/relatorios/prestacao-de-contas?ciclo=${report.cycle.id}&formato=pdf`}
+                icon="pdf"
+              />
+              <DownloadLink
+                href={`/api/relatorios/prestacao-de-contas?ciclo=${report.cycle.id}&formato=xlsx`}
+                icon="xlsx"
+              />
+            </div>
+          </div>
 
           <ChartCard
             title="Entradas e saídas do caixa"

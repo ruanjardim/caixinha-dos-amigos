@@ -16,6 +16,10 @@ import { cn } from "@/lib/cn";
 import { requirePagePermission } from "@/modules/auth/session";
 import { CATEGORY_LABEL } from "@/components/finance/ledger-labels";
 import { manualEntryAction } from "@/modules/ledger/actions";
+import { postClosingAdjustmentAction, reconcileCashAction } from "@/modules/results/actions";
+import { TextareaField } from "@/components/ui/field";
+import { formatDateTime } from "@/lib/format";
+import { formatBRL } from "@/domain/money";
 import { getLedgerOverview, listEntries } from "@/modules/ledger/service";
 
 export const metadata = { title: "Livro-caixa" };
@@ -44,8 +48,17 @@ export default async function LedgerPage({ searchParams }: PageProps<"/admin/liv
     );
   }
 
-  const [overview, entries] = await Promise.all([getLedgerOverview(cycle.id), listEntries(cycle.id)]);
-  const acceptsEntries = cycle.status !== "CLOSED";
+  const [overview, entries, reconciliations] = await Promise.all([
+    getLedgerOverview(cycle.id),
+    listEntries(cycle.id),
+    db.cashReconciliation.findMany({
+      where: { cycleId: cycle.id },
+      orderBy: [{ referenceDate: "desc" }, { createdAt: "desc" }],
+      take: 10,
+    }),
+  ]);
+  // Lançamentos manuais: só com o ciclo aberto ou aguardando apuração.
+  const acceptsEntries = cycle.status === "OPEN" || cycle.status === "CONTRIBUTIONS_CLOSED";
 
   return (
     <div className="space-y-6">
@@ -140,7 +153,100 @@ export default async function LedgerPage({ searchParams }: PageProps<"/admin/liv
           </CardContent>
         </Card>
       )}
-      {!acceptsEntries && <Alert tone="info">Ciclo encerrado: correções seguem o procedimento pós-encerramento.</Alert>}
+      {cycle.status === "SETTLING" && (
+        <Alert tone="info">Apuração aprovada: os únicos lançamentos agora são os pagamentos da distribuição.</Alert>
+      )}
+      {cycle.status === "CLOSED" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Correção pós-encerramento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ActionForm
+              action={postClosingAdjustmentAction}
+              submitLabel="Registrar correção"
+              confirm="Registrar uma correção em ciclo encerrado? Ela ficará marcada e auditada."
+              resetOnSuccess
+            >
+              <input type="hidden" name="cycleId" value={cycle.id} />
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <SelectField
+                  label="Tipo"
+                  name="kind"
+                  options={[
+                    { value: "EXPENSE", label: "Despesa" },
+                    { value: "REVENUE", label: "Receita" },
+                  ]}
+                />
+                <MoneyField label="Valor (R$)" name="amountCents" required />
+                <Field
+                  label="Data"
+                  name="occurredOn"
+                  type="date"
+                  max={todayInBrazil()}
+                  defaultValue={todayInBrazil()}
+                  required
+                />
+                <Field label="Descrição" name="description" required />
+              </div>
+              <TextareaField
+                label="Justificativa (obrigatória)"
+                name="justification"
+                rows={2}
+                hint="Por que a correção é necessária depois do encerramento. Não altera a apuração aprovada."
+              />
+            </ActionForm>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card id="conciliacao">
+        <CardHeader>
+          <CardTitle>Conciliação com o extrato</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ActionForm action={reconcileCashAction} submitLabel="Conciliar" resetOnSuccess>
+            <input type="hidden" name="cycleId" value={cycle.id} />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field
+                label="Data do extrato"
+                name="referenceDate"
+                type="date"
+                max={todayInBrazil()}
+                defaultValue={todayInBrazil()}
+                required
+              />
+              <MoneyField label="Saldo no extrato (R$)" name="statementBalanceCents" required />
+              <Field label="Observação" name="notes" />
+            </div>
+            <p className="text-muted text-xs">
+              O sistema compara com o saldo do livro-caixa na mesma data. Diferenças devem ser investigadas antes da
+              apuração.
+            </p>
+          </ActionForm>
+          {reconciliations.length > 0 && (
+            <ul className="divide-line border-line divide-y rounded-xl border text-sm">
+              {reconciliations.map((rec) => (
+                <li key={rec.id} className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
+                  <span>
+                    <strong>{formatDateBR(toISODate(rec.referenceDate))}</strong>
+                    <span className="text-muted">
+                      {" "}
+                      · extrato {formatBRL(rec.statementBalanceCents)} · livro {formatBRL(rec.bookBalanceCents)} ·
+                      registrado em {formatDateTime(rec.createdAt)}
+                    </span>
+                  </span>
+                  {rec.differenceCents === 0 ? (
+                    <Badge tone="green">Conciliado</Badge>
+                  ) : (
+                    <Badge tone="red">Diferença {formatBRL(rec.differenceCents)}</Badge>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <SummaryCard title="Lançamentos">
         {entries.length === 0 ? (

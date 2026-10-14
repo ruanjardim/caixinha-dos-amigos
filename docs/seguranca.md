@@ -24,6 +24,7 @@
 | Prestação de contas | Somente totais coletivos; contribuições agregadas por mês; nenhum nome ou valor individual (testado) |
 | Comunicados | Texto simples, exibido sem interpretar HTML (`<script>` aparece como texto — testado) |
 | Recibos | Só para pagamento confirmado, do próprio participante (ou admin); "não encontrado" para terceiros; código HMAC |
+| Relatórios | Permissão por tipo verificada no servidor; "não encontrado" para quem não pode; emissão auditada (exportação de dados pessoais) |
 | Ordem de verificação | Em toda ação: sessão/permissão ANTES de validar dados |
 
 ## Pendente (Fase 7)

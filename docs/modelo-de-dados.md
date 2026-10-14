@@ -76,4 +76,5 @@ Exemplo — contribuição de R$ 100 confirmada:
 - Ciclo `CLOSED` só aceita lançamentos com `postClosing = true` (procedimento auditável); ciclo `DRAFT` não aceita lançamentos.
 - `cycle_rules` congeladas não podem ser alteradas.
 - Apuração `APPROVED` não pode ser alterada (só marcada como `SUPERSEDED`).
+- `result_share`, `distribution`, `cash_reconciliation`: somente inclusão. Uma distribuição por participação (único); uma apuração aprovada por ciclo (índice único parcial).
 - CHECKs: valores positivos, dia de vencimento 1–28, datas do ciclo em ordem, % administrativo entre 0 e 100%.

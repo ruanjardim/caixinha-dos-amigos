@@ -116,6 +116,13 @@ export default async function CyclePage({ params }: PageProps<"/admin/ciclos/[id
           </CardContent>
         </Card>
       )}
+      {(cycle.status === "CONTRIBUTIONS_CLOSED" || cycle.status === "SETTLING" || cycle.status === "CLOSED") && (
+        <Alert tone="info" title="Apuração, distribuição e encerramento">
+          <Link href={`/admin/resultados?ciclo=${id}`} className="font-semibold underline">
+            Ir para os resultados deste ciclo
+          </Link>
+        </Alert>
+      )}
       {cycle.status === "OPEN" && today > endISO && (
         <Card>
           <CardContent className="space-y-3">

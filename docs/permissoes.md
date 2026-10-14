@@ -34,6 +34,9 @@ Fonte da verdade: [`src/modules/auth/permissions.ts`](../src/modules/auth/permis
 | Aceitar regras do ciclo | ✅¹ | ✅ |
 | Publicar comunicados | ✅ | — |
 | Relatórios coletivos autorizados (prestação de contas), ler comunicados | ✅ | ✅ |
+| Relatórios consolidados (PDF/Excel) | ✅ | — |
+| Relatório de prestação de contas e extrato individual (PDF/Excel) | ✅ | ✅ (só do próprio ciclo / próprios dados) |
+| Apurar, aprovar, distribuir, encerrar ciclo, conciliar | ✅ | — |
 | Baixar recibo PDF | ✅ (qualquer pagamento confirmado) | ✅ (somente os próprios) |
 
 ¹ Somente se o administrador também tiver cadastro de participante vinculado, e apenas para os próprios dados.

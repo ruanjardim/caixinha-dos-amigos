@@ -65,22 +65,40 @@ Verificações: `typecheck` ✅ · `lint` ✅ · `test` ✅ (178 testes) · `bui
 extrato, comunicados (incl. teste de XSS) e prestação de contas verificados no navegador ✅ · sem rolagem lateral em
 375 px ✅.
 
+## Fase 4 — Resultados ✅ (14/10/2026)
+
+Implementado e verificado:
+
+- **Motor de apuração** (política v1 aprovada pelo grupo): saldo diário proporcional com data de corte no fim das
+  contribuições, antecipações contadas a partir do início, estornos/devoluções subtraindo dias, remuneração
+  administrativa só sobre resultado positivo, prejuízo rateado pelo principal, trava de recursos, maior resto.
+  Reproduz o exemplo do planejamento (Ana R$ 816,99 / Bruno R$ 443,01).
+- **Fluxo:** encerrar contribuições → conciliar caixa → calcular (rascunho, com código de integridade) → aprovar
+  (imutável) → registrar pagamentos → encerrar. Devolução de principal na saída. Correções pós-encerramento com
+  justificativa. Remuneração administrativa bloqueada até validação jurídica (fica retida no caixa).
+- **Telas:** apuração e distribuição (checklist das etapas), conciliação no livro-caixa, devolução de principal,
+  relatórios; participante vê o resultado apurado e quando recebeu.
+- **9 relatórios + extrato individual**, em PDF e Excel, com permissão por tipo e emissão auditada.
+
+Verificações: `typecheck` ✅ · `lint` ✅ · testes ✅ (inclui fluxo completo de apuração, prejuízo, saída no meio
+do ciclo, concorrência, relatórios e proteção contra fórmula no Excel) · `build` ✅ · encerramento completo de um
+ciclo de demonstração no navegador ✅ · relatórios PDF/Excel baixados ✅.
+
 ## Próximas fases
 
 | Fase | Escopo |
 | --- | --- |
-| 4 — Resultados | Apuração, remuneração administrativa, distribuição (saldo diário), conciliação com extrato, encerramento e correções pós-encerramento, relatórios PDF/Excel |
 | 5 — Arrecadação | Atividades, prêmios, imagens, custos, numeração em simulação, fluxo de conformidade |
 | 6 — Integrações | Pix manual/simulado (QR, copia e cola), webhooks idempotentes, conciliação, notificações |
 | 7 — Qualidade | 2FA para administradores, CSP com nonce, testes E2E (Playwright), revisão de segurança, documentação final |
 
-## Decisões ainda pendentes (necessárias para a Fase 4)
+## Decisões tomadas para a Fase 4 (14/10/2026)
 
-1. Tratamento de resultado líquido negativo.
-2. Data de corte do saldo diário (fim das contribuições ou data da distribuição).
-3. Antecipações antes do início do ciclo contam dias a partir do início? (recomendado: sim)
-4. Quem sai no meio do ciclo: quando recebe o principal e se participa do resultado.
-5. Hospedagem de produção e provedor de e-mail.
+Prejuízo proporcional ao contribuído · data de corte no fim das contribuições · antecipações contam a partir do
+início · quem sai recebe o principal na saída e participa até ela. Ver [cálculos](calculos-financeiros.md).
+
+Pendentes para a produção: hospedagem e provedor de e-mail; validação jurídica/tributária (remuneração
+administrativa, estrutura da conta de recebimento).
 
 ## Limitações conhecidas
 
@@ -96,4 +114,6 @@ extrato, comunicados (incl. teste de XSS) e prestação de contas verificados no
 - Itens de menu das próximas fases aparecem como "em breve".
 - Painéis e gráficos apenas em tema claro (identidade visual do projeto).
 - Recibos usam a fonte Helvetica embutida no PDF (acentos do português suportados; sem emojis).
-- "Resultados atribuídos" do participante aparecem como R$ 0,00 até a apuração (Fase 4).
+- Relatórios em PDF usam a fonte Helvetica embutida: símbolos fora da codificação (ex.: Σ, sinal de menos tipográfico) são trocados por equivalentes.
+- O extrato individual lista as contribuições; o pagamento de encerramento aparece no resumo do ciclo (não como linha do extrato).
+- A página inicial do participante mostra o ciclo atual; resultados de ciclos encerrados aparecem no extrato.

@@ -61,6 +61,8 @@ Ordem obrigatória em toda Server Action: **sessão/permissão → validação (
 | **Painéis calculados a partir do livro-caixa** | As séries mensais (contribuições, entradas/saídas, resultado acumulado) vêm das linhas do livro-caixa, em regime de caixa — gráficos e saldos sempre concordam (testado). |
 | **Paleta de gráficos validada** | Verde da marca (#039855) para recebido/entradas, violeta (#4a3aa7) para saídas, cinza para contexto (previsto); verde × laranja foi REPROVADO no validador (indistinguíveis com protanopia). Cores de status (em dia/atraso) sempre com ícone + rótulo. Todo gráfico tem visão em tabela. Tema claro apenas. |
 | **Recibo com código de verificação** | HMAC-SHA256 (segredo do servidor) sobre id, valor, data de crédito e confirmação: qualquer alteração invalida o código e ninguém sem o segredo gera um válido. |
+| **Apuração com "impressão digital" do livro-caixa** | Como o livro-caixa é append-only, a contagem de lançamentos identifica qualquer mudança: aprovar exige que nada tenha mudado desde o cálculo. |
+| **Relatórios em modelo neutro** | Cada relatório é montado uma vez (`ReportDoc`) e renderizado em PDF (A4 paisagem, cabeçalho em todas as páginas) e Excel (valores numéricos, abas por seção, texto nunca vira fórmula). Toda emissão é auditada. |
 | **Chave de idempotência por formulário** | Reenvio acidental do mesmo formulário não duplica pagamento. |
 | **Service worker próprio** em vez de Serwist | Serwist depende de webpack; o Next 16 usa Turbopack. O SW necessário é pequeno e deliberadamente conservador (não guarda páginas com saldos). |
 | **Partidas dobradas simplificadas** no livro-caixa | Permite conciliar saldo contábil com o extrato e garantir, no banco, que todo lançamento fecha em zero. |

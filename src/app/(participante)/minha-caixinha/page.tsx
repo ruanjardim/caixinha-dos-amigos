@@ -10,6 +10,7 @@ import { formatCompetence, formatDateBR, toISODate } from "@/domain/dates";
 import { formatBRL } from "@/domain/money";
 import { firstName } from "@/lib/format";
 import { recentAnnouncementForParticipant } from "@/modules/announcements/service";
+import { getOwnResult } from "@/modules/results/queries";
 import { requirePagePermission } from "@/modules/auth/session";
 import { getOwnMemberships } from "@/modules/cycles/queries";
 
@@ -67,7 +68,7 @@ export default async function MyCaixinhaPage({ searchParams }: PageProps<"/minha
           </CardContent>
         </Card>
       ) : (
-        <CurrentMembership m={current} />
+        <CurrentMembership m={current} result={await getOwnResult(current.id)} />
       )}
 
       <Card>
@@ -88,7 +89,7 @@ export default async function MyCaixinhaPage({ searchParams }: PageProps<"/minha
 
 type OwnMembership = Awaited<ReturnType<typeof getOwnMemberships>>[number];
 
-function CurrentMembership({ m }: { m: OwnMembership }) {
+function CurrentMembership({ m, result }: { m: OwnMembership; result: Awaited<ReturnType<typeof getOwnResult>> }) {
   const rules = m.cycle.rules[0];
   const needsAcceptance = Boolean(rules?.frozenAt) && rules.acceptances.length === 0;
   const isDraft = m.cycle.status === "DRAFT";
@@ -141,12 +142,21 @@ function CurrentMembership({ m }: { m: OwnMembership }) {
         </Card>
         <Card className="p-4">
           <p className="text-muted text-xs font-semibold">Resultados atribuídos</p>
-          <MoneyValue cents={0} kind="calculated" className="mt-1 block text-xl" />
-          <p className="text-muted mt-1 text-xs">Apurados só ao final do ciclo, conforme as regras.</p>
+          <MoneyValue cents={result?.shareCents ?? 0} kind="calculated" className="mt-1 block text-xl" />
+          <p className="text-muted mt-1 text-xs">
+            {result
+              ? result.distribution
+                ? `Pago em ${formatDateBR(toISODate(result.distribution.paidOn))} (com o principal).`
+                : "Apurado e aprovado; pagamento no encerramento."
+              : "Apurados só ao final do ciclo, conforme as regras."}
+          </p>
         </Card>
         <Card className="p-4">
           <p className="text-muted text-xs font-semibold">Saldo demonstrativo</p>
-          <MoneyValue cents={m.summary.receivedCents} className="mt-1 block text-xl" />
+          <MoneyValue
+            cents={(result ? result.principalCents : m.summary.receivedCents) + (result?.shareCents ?? 0)}
+            className="mt-1 block text-xl"
+          />
           <p className="text-muted mt-1 text-xs">Depositado + resultados já apurados.</p>
         </Card>
       </div>
