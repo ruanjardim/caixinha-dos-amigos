@@ -49,3 +49,8 @@ Fonte da verdade: [`src/modules/auth/permissions.ts`](../src/modules/auth/permis
 
 > **Comprovantes:** só são baixados pelo administrador ou pelo próprio participante dono do pagamento. Para
 > qualquer outra pessoa a resposta é "não encontrado" (não revela a existência do arquivo).
+
+## Verificação em duas etapas
+
+Administrador sem 2FA configurado (`ADMIN_2FA_REQUIRED=true`, padrão) é tratado como participante pela matriz de
+permissões (`twoFactorPending`): páginas, ações e APIs administrativas são negadas no servidor até a configuração.

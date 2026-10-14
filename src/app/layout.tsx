@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { connection } from "next/server";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import "./globals.css";
 
@@ -25,7 +26,9 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Renderização sempre dinâmica: cada resposta recebe o nonce da CSP (ver src/proxy.ts).
+  await connection();
   return (
     <html lang="pt-BR" className={`${jakarta.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">

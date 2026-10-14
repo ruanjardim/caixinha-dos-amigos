@@ -31,14 +31,22 @@
 | Notificações          | Decisões sobre pagamento vão só ao próprio participante; e-mails sem dados de outros participantes; preferência respeitada; envio único                                                                         |
 | Ordem de verificação  | Em toda ação: sessão/permissão ANTES de validar dados                                                                                                                                                           |
 
-## Pendente (Fase 7)
+## Implementado (Fase 7)
 
-- 2FA (TOTP) obrigatório para administradores.
-- CSP com nonce (remover `'unsafe-inline'` de `script-src`).
-- Registro de tentativas de login malsucedidas na auditoria.
-- Verificação de senhas vazadas (Have I Been Pwned, k-anonimidade).
-- Política de retenção e rotina automatizada de backup.
-- Limitação de taxa por IP no webhook Pix.
+| Controle                   | Como                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Verificação em duas etapas | TOTP (aplicativo autenticador) **obrigatório para administradores**: sem ele, o administrador só tem permissões de participante e é levado à configuração (servidor, não só interface). 10 códigos de recuperação de uso único; segredo e códigos cifrados no banco; bloqueio de 15 min após 10 códigos errados; administrador não consegue desligar. Opcional para participantes. Recuperação somente por linha de comando (`npm run admin:reset-2fa`), auditada |
+| CSP com nonce              | Nonce novo a cada requisição (`src/proxy.ts`); `script-src 'self' 'nonce-…' 'strict-dynamic'`, sem `'unsafe-inline'` nem `'unsafe-eval'` em produção; páginas sempre dinâmicas; APIs com `default-src 'none'`                                                                                                                                                                                                                                                     |
+| Auditoria de autenticação  | Login malsucedido (e-mail digitado, nunca a senha), códigos 2FA aceitos/recusados, uso de código de recuperação, ativação/desativação do 2FA                                                                                                                                                                                                                                                                                                                      |
+| Webhook Pix                | No máximo 30 assinaturas inválidas gravadas por minuto; acima disso responde 429 sem gravar                                                                                                                                                                                                                                                                                                                                                                       |
+| Arquivos                   | Comprovantes órfãos (sem vínculo há mais de 24 h) removidos pela tarefa diária                                                                                                                                                                                                                                                                                                                                                                                    |
+| Dependências               | `npm audit` revisado: correções aplicadas via `overrides` (uuid, deepmerge-ts, mysql2). Restam alertas só na cadeia de lint (`braces` ≤ 3.0.3, sem versão corrigida publicada), ferramenta de desenvolvimento que não vai para produção                                                                                                                                                                                                                           |
+
+## Pendente / recomendações
+
+- Verificação de senhas vazadas (Have I Been Pwned, k-anonimidade) — exige chamada a serviço externo; avaliar.
+- Teste de invasão por terceiro antes de movimentar dinheiro real.
+- Backup do banco depende de `pg_dump` no servidor (ver [backup.md](backup.md)).
 
 ## LGPD
 
@@ -47,7 +55,12 @@
 - **Finalidade:** dados usados exclusivamente para a gestão da caixinha.
 - **Acesso:** cada participante vê apenas os próprios dados; administradores veem o necessário para a gestão.
 - **Rastreabilidade:** acessos e alterações relevantes ficam na auditoria.
-- **Retenção:** registros financeiros são mantidos pelo prazo legal mesmo após a saída do participante; dados
-  pessoais não financeiros podem ser anonimizados a pedido (a implementar).
+- **Retenção:** registros financeiros são mantidos pelo prazo legal mesmo após a saída do participante.
+- **Acesso e portabilidade:** o participante baixa os próprios dados em JSON ("Meus dados" → "Baixar meus
+  dados"); a administração pode gerar o mesmo arquivo a pedido do titular. Toda exportação é auditada.
+- **Eliminação:** a administração anonimiza o cadastro (nome, e-mail, telefone substituídos; acesso, senha,
+  sessões e 2FA removidos; avisos enviados desvinculados do e-mail) depois que o titular não tiver valores em
+  aberto. Pagamentos, livro-caixa e auditoria são mantidos pelo prazo legal, sem identificação direta. Um cadastro
+  anonimizado não pode ser reativado nem editado.
 - **Ambientes de demonstração:** somente dados fictícios (domínio `.local`).
 - A definir com o grupo: termo de uso e aviso de privacidade, encarregado (DPO) e canal para solicitações.

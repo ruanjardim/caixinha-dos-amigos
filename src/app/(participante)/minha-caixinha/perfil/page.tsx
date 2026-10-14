@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActionForm } from "@/components/forms/action-form";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,7 @@ export default async function ProfilePage() {
   const user = await requirePagePermission("self.profile.update");
   const [participant, account] = await Promise.all([
     user.participantId ? db.participant.findUnique({ where: { id: user.participantId } }) : null,
-    db.user.findUnique({ where: { id: user.userId }, select: { emailNotifications: true } }),
+    db.user.findUnique({ where: { id: user.userId }, select: { emailNotifications: true, twoFactorEnabled: true } }),
   ]);
 
   return (
@@ -66,6 +67,35 @@ export default async function ProfilePage() {
             </CardContent>
           </Card>
         </>
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Segurança da conta</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p>
+            Verificação em duas etapas: <strong>{account?.twoFactorEnabled ? "ativa" : "desativada"}</strong>
+          </p>
+          <Link href="/seguranca/dois-fatores" className="text-brand-700 font-semibold hover:underline">
+            {account?.twoFactorEnabled ? "Gerenciar" : "Ativar (recomendado)"}
+          </Link>
+        </CardContent>
+      </Card>
+      {participant && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Meus dados (LGPD)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p className="text-muted">
+              Baixe uma cópia de tudo o que a caixinha guarda sobre você: cadastro, participações, pagamentos,
+              resultados e avisos recebidos. Para correção ou eliminação, fale com a administração.
+            </p>
+            <a href="/api/meus-dados" className="text-brand-700 font-semibold hover:underline" download>
+              Baixar meus dados (JSON)
+            </a>
+          </CardContent>
+        </Card>
       )}
       <Card>
         <CardHeader>

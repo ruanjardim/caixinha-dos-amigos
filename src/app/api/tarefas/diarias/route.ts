@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { todayInBrazil } from "@/domain/dates";
 import { env } from "@/lib/env";
 import { recordAudit } from "@/modules/audit/audit";
+import { cleanupOrphanUploads } from "@/modules/files/service";
 import { sendDueReminders } from "@/modules/notifications/service";
 import { expireCharges } from "@/modules/pix/service";
 
@@ -14,8 +15,8 @@ function authorized(header: string | null): boolean {
 }
 
 /**
- * Tarefa diária (agendador externo, 1x ao dia): expira cobranças Pix vencidas e envia
- * lembretes de vencimento. Protegida por "Authorization: Bearer <CRON_SECRET>".
+ * Tarefa diária (agendador externo, 1x ao dia): expira cobranças Pix vencidas, envia
+ * lembretes de vencimento e remove comprovantes órfãos. Protegida por "Authorization: Bearer <CRON_SECRET>".
  * Pode rodar mais de uma vez no mesmo dia: cada aviso tem chave única e não se repete.
  */
 async function run(request: Request) {
@@ -24,13 +25,17 @@ async function run(request: Request) {
   }
   const expiredCharges = await expireCharges(new Date());
   const reminders = await sendDueReminders(todayInBrazil());
+  const orphanUploads = await cleanupOrphanUploads(new Date());
   await recordAudit({
     actorId: null,
     action: "job.daily",
     entityType: "Job",
-    after: { expiredCharges, reminders },
+    after: { expiredCharges, reminders, orphanUploads },
   });
-  return Response.json({ ok: true, expiredCharges, reminders }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json(
+    { ok: true, expiredCharges, reminders, orphanUploads },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 export const GET = run;

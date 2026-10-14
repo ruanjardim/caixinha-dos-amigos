@@ -24,6 +24,11 @@ const schema = z.object({
   PIX_MANUAL_CITY: z.string().trim().optional().default(""),
   /** Segredo das tarefas agendadas (ex.: lembretes de vencimento). */
   CRON_SECRET: z.string().min(32, "CRON_SECRET deve ter ao menos 32 caracteres"),
+  /** Verificação em duas etapas obrigatória para administradores (desligar SOMENTE em testes locais). */
+  ADMIN_2FA_REQUIRED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
 });
 
 const parsed = schema.safeParse(process.env);

@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { db, type DbTransaction } from "@/lib/db";
 import { DomainError } from "@/lib/errors";
@@ -24,8 +24,8 @@ const ALLOWED: { type: string; ext: string; matches: (b: Buffer) => boolean }[] 
 
 export const ACCEPTED_UPLOADS = ".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp";
 
-function storageDir() {
-  return path.join(process.cwd(), "storage", "uploads");
+export function storageDir() {
+  return path.join(/* turbopackIgnore: true */ process.cwd(), "storage", "uploads");
 }
 
 /** Identifica o tipo REAL pelo conteúdo (não confia na extensão nem no navegador). */
@@ -47,7 +47,7 @@ export async function saveUpload(file: unknown, uploadedById: string, tx?: DbTra
 
   const storageKey = `${randomUUID()}.${kind.ext}`;
   await mkdir(storageDir(), { recursive: true });
-  await writeFile(path.join(storageDir(), storageKey), bytes, { flag: "wx" });
+  await writeFile(path.join(/* turbopackIgnore: true */ storageDir(), storageKey), bytes, { flag: "wx" });
 
   const safeName = file.name.replace(/[^\w.\- ()À-ú]/g, "_").slice(0, 120) || `comprovante.${kind.ext}`;
   return (tx ?? db).fileUpload.create({
@@ -66,4 +66,60 @@ export async function readUpload(storageKey: string): Promise<Buffer> {
   // storageKey é gerado pelo sistema (UUID); ainda assim, impede escapar da pasta.
   if (!/^[0-9a-f-]{36}\.(pdf|png|jpg|webp)$/.test(storageKey)) throw new DomainError("Arquivo inválido.");
   return readFile(path.join(storageDir(), storageKey));
+}
+
+const ORPHAN_AGE_MS = 24 * 60 * 60 * 1000;
+
+async function removeFile(dir: string, storageKey: string) {
+  try {
+    await unlink(path.join(dir, storageKey));
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
+}
+
+/**
+ * Remove comprovantes/imagens ÓRFÃOS com mais de 24 h (tarefa diária):
+ * - registros sem vínculo com pagamento, lançamento ou atividade (o formulário falhou depois do envio);
+ * - arquivos no disco sem registro no banco (gravação interrompida).
+ * Arquivos vinculados nunca são tocados.
+ */
+export async function cleanupOrphanUploads(now: Date = new Date(), dir: string = storageDir()) {
+  const cutoff = new Date(now.getTime() - ORPHAN_AGE_MS);
+  const orphans = await db.fileUpload.findMany({
+    where: { createdAt: { lt: cutoff }, payments: { none: {} }, ledger: { none: {} }, activityImages: { none: {} } },
+    select: { id: true, storageKey: true },
+  });
+  for (const o of orphans) {
+    // Exclui o registro só se continuar sem vínculo (proteção contra corrida com um envio em andamento).
+    const removed = await db.fileUpload.deleteMany({
+      where: { id: o.id, payments: { none: {} }, ledger: { none: {} }, activityImages: { none: {} } },
+    });
+    if (removed.count === 1) await removeFile(dir, o.storageKey);
+  }
+
+  let files = 0;
+  let names: string[] = [];
+  try {
+    names = await readdir(dir);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
+  const candidates = names.filter((n) => /^[0-9a-f-]{36}.(pdf|png|jpg|webp)$/.test(n));
+  if (candidates.length > 0) {
+    const known = new Set(
+      (await db.fileUpload.findMany({ where: { storageKey: { in: candidates } }, select: { storageKey: true } })).map(
+        (f) => f.storageKey,
+      ),
+    );
+    for (const name of candidates) {
+      if (known.has(name)) continue;
+      const info = await stat(path.join(dir, name));
+      if (info.mtime < cutoff) {
+        await removeFile(dir, name);
+        files++;
+      }
+    }
+  }
+  return { records: orphans.length, files };
 }

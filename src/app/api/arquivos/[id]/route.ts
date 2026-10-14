@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { readUpload } from "@/modules/files/service";
-import { canViewParticipant } from "@/modules/auth/permissions";
+import { canViewParticipant, hasPermission } from "@/modules/auth/permissions";
 import { getCurrentUser } from "@/modules/auth/session";
 
 /**
@@ -27,7 +27,8 @@ export async function GET(request: Request, { params }: RouteContext<"/api/arqui
   if (!file) return notFound;
 
   let allowed =
-    user.role === "ADMIN" ||
+    // Pela matriz de permissões (admin com 2FA pendente não passa).
+    hasPermission(user, "participants.manage") ||
     file.uploadedById === user.userId ||
     file.payments.some((p) => canViewParticipant(user, p.membership.participantId));
 

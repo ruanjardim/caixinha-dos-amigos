@@ -1,5 +1,7 @@
 import "server-only";
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
+import { twoFactor } from "better-auth/plugins/two-factor";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/lib/db";
@@ -7,6 +9,15 @@ import { env, isProduction } from "@/lib/env";
 import { sendMail } from "@/lib/mailer";
 import { hashPassword, verifyPassword, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/password";
 import { recordAudit } from "@/modules/audit/audit";
+
+/** Rotas de autenticação cujo resultado (sucesso ou falha) vai para a auditoria. */
+const AUDITED_2FA: Record<string, string> = {
+  "/two-factor/enable": "auth.2fa_setup_started",
+  "/two-factor/verify-totp": "auth.2fa_verify",
+  "/two-factor/verify-backup-code": "auth.2fa_backup_code",
+  "/two-factor/disable": "auth.2fa_disabled",
+  "/two-factor/generate-backup-codes": "auth.2fa_backup_codes_regenerated",
+};
 
 export const auth = betterAuth({
   appName: "Caixinha dos Amigos",
@@ -84,6 +95,47 @@ export const auth = betterAuth({
     defaultCookieAttributes: { httpOnly: true, sameSite: "lax", secure: isProduction },
   },
 
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      // Administradores não podem desligar a verificação em duas etapas (obrigatória).
+      if (ctx.path === "/two-factor/disable" && env.ADMIN_2FA_REQUIRED) {
+        const session = await getSessionFromCtx(ctx);
+        const user = session
+          ? await db.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
+          : null;
+        if (user?.role === "ADMIN") {
+          throw new APIError("FORBIDDEN", {
+            message: "A verificação em duas etapas é obrigatória para administradores.",
+          });
+        }
+      }
+    }),
+    after: createAuthMiddleware(async (ctx) => {
+      const failed = isAPIError(ctx.context.returned);
+      if (ctx.path === "/sign-in/email" && failed) {
+        // Tentativa de login malsucedida: registra o e-mail digitado (nunca a senha).
+        const email = typeof ctx.body?.email === "string" ? ctx.body.email.trim().toLowerCase().slice(0, 120) : null;
+        await recordAudit({
+          actorId: null,
+          action: "auth.login_failed",
+          entityType: "User",
+          after: { email },
+        });
+        return;
+      }
+      const action = AUDITED_2FA[ctx.path];
+      if (action) {
+        const userId = ctx.context.newSession?.user.id ?? ctx.context.session?.user.id ?? null;
+        await recordAudit({
+          actorId: userId,
+          action: failed ? `${action}_failed` : action,
+          entityType: "User",
+          entityId: userId,
+        });
+      }
+    }),
+  },
+
   databaseHooks: {
     session: {
       create: {
@@ -109,7 +161,15 @@ export const auth = betterAuth({
   },
 
   // Deve ser o último plugin: grava cookies em Server Actions.
-  plugins: [nextCookies()],
+  plugins: [
+    twoFactor({
+      issuer: "Caixinha dos Amigos",
+      backupCodeOptions: { amount: 10, length: 10 },
+      // Bloqueia a conta por 15 min após 10 códigos errados seguidos.
+      accountLockout: { enabled: true, maxFailedAttempts: 10, durationSeconds: 15 * 60 },
+    }),
+    nextCookies(),
+  ],
 });
 
 export type AuthSession = typeof auth.$Infer.Session;

@@ -42,6 +42,17 @@ describe("matriz de permissões", () => {
     for (const p of PERMISSIONS) expect(hasPermission(suspended, p), p).toBe(false);
   });
 
+  it("administrador sem verificação em duas etapas fica só com permissões de participante", () => {
+    const pending: Actor = { ...admin, participantId: "p-admin", twoFactorPending: true };
+    for (const p of ADMIN_ONLY) expect(hasPermission(pending, p), p).toBe(false);
+    expect(hasPermission(pending, "self.dashboard")).toBe(true);
+    expect(hasPermission(pending, "reports.collective")).toBe(true);
+    expect(hasPermission({ ...pending, twoFactorPending: false }, "payments.confirm")).toBe(true);
+    // Nem dados individuais de outros participantes (comprovantes, recibos).
+    expect(canViewParticipant(pending, "p-joao")).toBe(false);
+    expect(canViewParticipant(pending, "p-admin")).toBe(true);
+  });
+
   it("sem sessão, nada é permitido", () => {
     expect(hasPermission(null, "self.dashboard")).toBe(false);
     expect(canViewParticipant(null, "p-joao")).toBe(false);

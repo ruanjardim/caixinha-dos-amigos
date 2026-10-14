@@ -53,3 +53,8 @@ next-env.d.ts
 
 # PostgreSQL local de desenvolvimento
 /.postgres
+
+# testes E2E
+/e2e/.state
+/playwright-report
+/test-results

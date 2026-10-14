@@ -21,6 +21,8 @@ import { SIGNATURE_HEADER, signWebhook, TIMESTAMP_HEADER, verifyWebhookSignature
 
 const PAYABLE_CYCLE_STATUS = ["OPEN", "CONTRIBUTIONS_CLOSED"];
 export const MAX_WEBHOOK_BYTES = 64 * 1024;
+/** Acima disto (por minuto), assinaturas inválidas deixam de ser gravadas: evita encher o banco. */
+export const MAX_REJECTED_PER_MINUTE = 30;
 const DAY_MS = 86_400_000;
 
 /** Identificador da cobrança (txid): 25 caracteres alfanuméricos, imprevisível. */
@@ -192,6 +194,12 @@ export async function processWebhook(input: {
     now,
   });
   if (!check.ok) {
+    const recentRejected = await db.webhookEvent.count({
+      where: { provider: provider.id, signatureValid: false, receivedAt: { gt: new Date(Date.now() - 60_000) } },
+    });
+    if (recentRejected >= MAX_REJECTED_PER_MINUTE) {
+      return { httpStatus: 429, outcome: "ASSINATURA_INVALIDA", notifyAdmins: false };
+    }
     const eventRowId = await logRejected(
       provider.id,
       "rejeitado",

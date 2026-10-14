@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, KeyRound } from "lucide-react";
 import { ActionForm } from "@/components/forms/action-form";
+import { formatDateTime } from "@/lib/format";
 import { CycleStatusBadge, ParticipantStatusBadge } from "@/components/finance/status-badges";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,8 @@ import {
   updateParticipantAction,
 } from "@/modules/participants/actions";
 import { getParticipant } from "@/modules/participants/service";
+import { anonymizeParticipantAction } from "@/modules/privacy/actions";
+import { anonymizationBlockers } from "@/modules/privacy/service";
 import { ParticipantFields } from "../participant-fields";
 
 export const metadata = { title: "Participante" };
@@ -27,6 +30,7 @@ export default async function ParticipantPage({ params }: PageProps<"/admin/part
   const { id } = await params;
   const p = await getParticipant(id);
   if (!p) notFound();
+  const blockers = p.anonymizedAt ? [] : await anonymizationBlockers(p.id);
 
   const hasAccess = p.user?.status === "ACTIVE";
   const isSelf = p.user?.id === actor.userId;
@@ -123,6 +127,44 @@ export default async function ParticipantPage({ params }: PageProps<"/admin/part
                 <Field label="Motivo" name="reason" required />
                 <p className="text-muted text-xs">Cadastros nunca são apagados: o histórico financeiro é preservado.</p>
               </ActionForm>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-col gap-1">
+              <CardTitle>Privacidade (LGPD)</CardTitle>
+              <p className="text-muted text-sm">Atendimento a pedidos do titular dos dados.</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <a
+                href={`/api/meus-dados?participante=${p.id}`}
+                className="text-brand-700 text-sm font-semibold hover:underline"
+                download
+              >
+                Exportar dados deste participante (JSON)
+              </a>
+              {p.anonymizedAt ? (
+                <p className="text-muted text-sm">Dados pessoais anonimizados em {formatDateTime(p.anonymizedAt)}.</p>
+              ) : blockers.length > 0 ? (
+                <p className="text-muted text-sm">
+                  Anonimização indisponível: {blockers[0]} Os dados financeiros precisam ser concluídos antes.
+                </p>
+              ) : isSelf ? null : (
+                <ActionForm
+                  action={anonymizeParticipantAction}
+                  submitLabel="Anonimizar dados pessoais"
+                  submitVariant="danger"
+                  confirm="Anonimizar? Nome, e-mail e telefone serão substituídos e o acesso removido. Não há como desfazer."
+                >
+                  <input type="hidden" name="participantId" value={p.id} />
+                  <p className="text-muted text-xs">
+                    Substitui nome, e-mail e telefone e remove o acesso. Pagamentos, livro-caixa e auditoria são
+                    mantidos pelo prazo legal, sem identificação direta.
+                  </p>
+                  <Field label="Motivo (ex.: pedido do titular em 14/10/2026)" name="reason" required />
+                  <Field label="Digite ANONIMIZAR para confirmar" name="confirmation" autoComplete="off" required />
+                </ActionForm>
+              )}
             </CardContent>
           </Card>
         </div>

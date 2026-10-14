@@ -43,11 +43,14 @@ model User {
   status             UserStatus @default(ACTIVE)
   /// Aceita receber avisos por e-mail (lembretes, confirmações). E-mails de segurança sempre são enviados.
   emailNotifications Boolean    @default(true)
+  /// Verificação em duas etapas (TOTP) ativa — obrigatória para administradores.
+  twoFactorEnabled   Boolean    @default(false)
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
   sessions    Session[]
   accounts    Account[]
+  twoFactors  TwoFactor[]
   participant Participant?
 
   auditLogs           AuditLog[]           @relation("AuditActor")
@@ -57,6 +60,22 @@ model User {
   complianceApprovals ComplianceApproval[]
 
   @@map("user")
+}
+
+/// Segredo TOTP e códigos de recuperação (cifrados pelo Better Auth com BETTER_AUTH_SECRET).
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+
+  @@index([userId])
+  @@index([secret])
+  @@map("two_factor")
 }
 
 model Session {
@@ -219,16 +238,18 @@ enum ParticipantStatus {
 
 /// Dados pessoais mínimos (LGPD: coletar apenas o necessário).
 model Participant {
-  id        String            @id @default(cuid())
-  userId    String?           @unique
-  user      User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  fullName  String
-  email     String            @unique
-  phone     String?
-  joinedAt  DateTime          @db.Date
-  status    ParticipantStatus @default(ACTIVE)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id           String            @id @default(cuid())
+  userId       String?           @unique
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName     String
+  email        String            @unique
+  phone        String?
+  joinedAt     DateTime          @db.Date
+  status       ParticipantStatus @default(ACTIVE)
+  /// LGPD: dados pessoais substituídos (registros financeiros preservados pelo prazo legal).
+  anonymizedAt DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   memberships     Membership[]
   acceptances     RulesAcceptance[]

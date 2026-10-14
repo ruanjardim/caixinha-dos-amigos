@@ -316,3 +316,24 @@ describe.skipIf(!enabled)("Pix e webhook (integração)", () => {
     });
   });
 });
+
+describe.skipIf(!enabled)("Pix: proteção contra excesso de mensagens forjadas", () => {
+  it("depois de 30 rejeições no minuto, para de gravar e responde 429", async () => {
+    const body = JSON.stringify({ id: `evt-${randomUUID()}`, type: "pix.paid" });
+    let last;
+    for (let i = 0; i < 35; i++) {
+      last = await processWebhook({
+        provider: "simulated",
+        rawBody: body,
+        signature: "v1=forjada",
+        timestamp: "1",
+        secret: SECRET,
+      });
+    }
+    expect(last).toMatchObject({ httpStatus: 429 });
+    const recent = await db.webhookEvent.count({
+      where: { signatureValid: false, receivedAt: { gt: new Date(Date.now() - 60_000) } },
+    });
+    expect(recent).toBeLessThanOrEqual(30);
+  });
+});

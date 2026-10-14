@@ -32,7 +32,7 @@ export async function sendMail(message: MailMessage): Promise<void> {
     throw new Error("SMTP não configurado: defina SMTP_HOST para enviar e-mails em produção.");
   }
 
-  const dir = path.join(process.cwd(), ".outbox");
+  const dir = path.join(/* turbopackIgnore: true */ process.cwd(), ".outbox");
   await mkdir(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const safeTo = message.to.replace(/[^a-z0-9@._-]/gi, "_");

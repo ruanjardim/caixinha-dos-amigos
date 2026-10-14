@@ -3,10 +3,13 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { auth } from "@/modules/auth/auth";
 import { hasPermission, isRole, type Actor, type Permission } from "@/modules/auth/permissions";
 
-export type CurrentUser = Actor & { name: string; email: string };
+export type CurrentUser = Actor & { name: string; email: string; twoFactorEnabled?: boolean };
+
+export const TWO_FACTOR_SETUP_PATH = "/seguranca/dois-fatores";
 
 export class ForbiddenError extends Error {
   constructor(message = "Você não tem permissão para esta operação.") {
@@ -39,6 +42,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       email: true,
       role: true,
       status: true,
+      twoFactorEnabled: true,
       participant: { select: { id: true } },
     },
   });
@@ -51,6 +55,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     role: user.role,
     status: user.status,
     participantId: user.participant?.id ?? null,
+    twoFactorEnabled: user.twoFactorEnabled,
+    twoFactorPending: user.role === "ADMIN" && env.ADMIN_2FA_REQUIRED && !user.twoFactorEnabled,
   };
 });
 
@@ -58,6 +64,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user || user.status !== "ACTIVE") redirect("/login");
+  // Administrador sem verificação em duas etapas: configura antes de qualquer outra coisa.
+  if (user.twoFactorPending) redirect(TWO_FACTOR_SETUP_PATH);
   return user;
 }
 
@@ -77,6 +85,7 @@ export async function requirePermission(permission: Permission): Promise<Current
 }
 
 /** Página inicial conforme o perfil. */
-export function homePathFor(user: Pick<Actor, "role">): string {
+export function homePathFor(user: Pick<Actor, "role" | "twoFactorPending">): string {
+  if (user.twoFactorPending) return TWO_FACTOR_SETUP_PATH;
   return user.role === "ADMIN" ? "/admin" : "/minha-caixinha";
 }

@@ -11,6 +11,8 @@ import { auth } from "@/modules/auth/auth";
 import type { CurrentUser } from "@/modules/auth/session";
 import type { ParticipantInput } from "./schemas";
 
+const ANONYMIZED = "Cadastro anonimizado (LGPD): não pode ser alterado nem reativado.";
+
 function snapshot(p: { fullName: string; email: string; phone: string | null; joinedAt: Date; status: string }) {
   return { fullName: p.fullName, email: p.email, phone: p.phone, joinedAt: toISODate(p.joinedAt), status: p.status };
 }
@@ -49,6 +51,7 @@ export async function updateParticipant(actor: CurrentUser, id: string, input: P
     return await db.$transaction(async (tx) => {
       const before = await tx.participant.findUnique({ where: { id } });
       if (!before) throw new DomainError("Participante não encontrado.");
+      if (before.anonymizedAt) throw new DomainError(ANONYMIZED);
 
       const after = await tx.participant.update({
         where: { id },
@@ -94,6 +97,7 @@ export async function setParticipantStatus(
   return db.$transaction(async (tx) => {
     const before = await tx.participant.findUnique({ where: { id } });
     if (!before) throw new DomainError("Participante não encontrado.");
+    if (before.anonymizedAt) throw new DomainError(ANONYMIZED);
     if (before.status === status) return before;
     const after = await tx.participant.update({ where: { id }, data: { status } });
     // Inativar o cadastro também suspende o acesso.
@@ -124,6 +128,7 @@ export async function setParticipantStatus(
 export async function grantAccess(actor: CurrentUser, participantId: string) {
   const participant = await db.participant.findUnique({ where: { id: participantId }, include: { user: true } });
   if (!participant) throw new DomainError("Participante não encontrado.");
+  if (participant.anonymizedAt) throw new DomainError(ANONYMIZED);
   if (participant.status !== "ACTIVE") throw new DomainError("Ative o cadastro antes de liberar o acesso.");
 
   await db.$transaction(async (tx) => {

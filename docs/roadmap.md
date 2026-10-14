@@ -116,11 +116,22 @@ Verificações: testes ✅ (BR Code contra o exemplo oficial, assinatura, todos 
 dos eventos, isolamento entre participantes, envio único/preferência/falha, lembretes) · webhook via HTTP ✅ ·
 fluxo no navegador (cobrança → pagamento simulado → em análise) ✅ · visão do participante no celular ✅.
 
-## Próximas fases
+## Fase 7 — Qualidade ✅ (14/10/2026)
 
-| Fase          | Escopo                                                                                                     |
-| ------------- | ---------------------------------------------------------------------------------------------------------- |
-| 7 — Qualidade | 2FA para administradores, CSP com nonce, testes E2E (Playwright), revisão de segurança, documentação final |
+- Verificação em duas etapas (TOTP) obrigatória para administradores, com códigos de recuperação, bloqueio por
+  tentativas e recuperação auditada por linha de comando; opcional para participantes.
+- CSP com nonce por requisição (sem `'unsafe-inline'`/`'unsafe-eval'` em scripts no build de produção).
+- Auditoria de logins malsucedidos e eventos de 2FA; rótulos em português para todas as ações.
+- LGPD: exportação dos dados do titular (JSON) e anonimização preservando o histórico financeiro.
+- Backup (`npm run backup`: banco + arquivos + manifesto SHA-256 + retenção 7/4/12) e limpeza de comprovantes órfãos.
+- Webhook Pix com teto de rejeições gravadas por minuto.
+- Testes E2E (Playwright) contra o build de produção, num banco exclusivo: segurança, participante no celular,
+  2FA, conferência de pagamento.
+- Revisão de dependências (`npm audit`) e das checagens de permissão (corrigida uma checagem por papel que
+  ignorava o 2FA pendente em `/api/arquivos`).
+
+Verificações: testes unitários/integração ✅ · E2E ✅ · fluxo de 2FA no navegador (ativação, código errado, código de
+recuperação) ✅ · segredo TOTP cifrado no banco ✅.
 
 ## Decisões tomadas para a Fase 4 (14/10/2026)
 
@@ -136,14 +147,14 @@ administrativa, estrutura da conta de recebimento).
   administração pode reenviá-lo.
 - Comprovantes ficam no disco local (`storage/uploads`); em produção será preciso um volume persistente ou
   armazenamento de objetos, incluído no backup.
-- Se o envio do formulário falhar depois de o comprovante ser gravado, o arquivo fica órfão no disco (sem
-  vínculo e inacessível). Limpeza periódica prevista para a Fase 7.
+- Comprovantes órfãos (formulário que falhou após o envio) ficam até a próxima tarefa diária (remoção após 24 h).
 - No celular, a barra inferior do administrador mostra 5 atalhos; a Auditoria fica acessível pelo painel.
-- CSP ainda permite `'unsafe-inline'` em scripts; 2FA ainda não implementado; sem testes E2E automatizados (fluxo
-  verificado manualmente no navegador).
-- Itens de menu das próximas fases aparecem como "em breve".
-- Pix real (PSP) não está integrado: só simulação e modo manual. Requisições ao webhook com assinatura inválida
-  são registradas (amostra limitada); limitação de taxa por IP no webhook prevista para a Fase 7.
+- Estilos ainda usam `'unsafe-inline'` na CSP (atributos `style` dos gráficos não aceitam nonce); scripts não.
+- Pix real (PSP) não está integrado: só simulação e modo manual. O teto de rejeições do webhook é global (não por IP).
+- O dump do banco no backup exige `pg_dump` no servidor (não incluído no PostgreSQL embutido de desenvolvimento).
+- Os testes E2E usam o Chrome instalado (ou Edge com `E2E_CHANNEL=msedge`) e cobrem os fluxos principais, não
+  todas as telas.
+- Verificação de senhas vazadas (HIBP) não implementada (dependeria de serviço externo).
 - Os lembretes dependem de um agendador externo chamar a tarefa diária.
 - Painéis e gráficos apenas em tema claro (identidade visual do projeto).
 - Recibos usam a fonte Helvetica embutida no PDF (acentos do português suportados; sem emojis).

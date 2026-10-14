@@ -4,7 +4,8 @@ Plataforma web para administrar a caixinha coletiva de um grupo privado: cotas m
 livro-caixa, prestação de contas e apuração/distribuição de resultados — com transparência para os participantes
 e rastreabilidade completa para a administração.
 
-> **Status:** Fases 1 a 6 concluídas (fundação, gestão financeira, painéis, resultados, arrecadação e integrações). Veja [docs/roadmap.md](docs/roadmap.md).
+> **Status:** as 7 fases planejadas estão concluídas (fundação, gestão financeira, painéis, resultados, arrecadação,
+> integrações e qualidade). Antes de usar com dinheiro real, veja o checklist em [docs/implantacao.md](docs/implantacao.md). Veja [docs/roadmap.md](docs/roadmap.md).
 >
 > A plataforma **não realiza investimentos** e **não promete rendimento**. Recursos sensíveis (Pix real, venda de
 > números de sorteio, pagamento da remuneração administrativa) ficam **desligados por padrão** até validação
@@ -50,38 +51,46 @@ Usuários de demonstração (senha = `DEV_SEED_PASSWORD` do seu `.env`):
 - `admin@caixinha.local` — Administrador
 - `joao@caixinha.local` — Participante
 
+No primeiro acesso do administrador, o sistema pede a configuração da **verificação em duas etapas** (aplicativo
+autenticador no celular, como Google Authenticator ou Microsoft Authenticator). Guarde os códigos de recuperação.
+
 Em desenvolvimento, e-mails (ex.: recuperação de senha) **não são enviados**: ficam gravados em `.outbox/`.
 
 ## Comandos
 
-| Comando                                        | O que faz                                                                      |
-| ---------------------------------------------- | ------------------------------------------------------------------------------ |
-| `npm run dev`                                  | Servidor de desenvolvimento                                                    |
-| `npm run build` / `npm start`                  | Build e execução de produção                                                   |
-| `npm run typecheck`                            | Gera tipos de rotas e verifica TypeScript                                      |
-| `npm run lint`                                 | ESLint                                                                         |
-| `npm test`                                     | Testes automatizados (unitários + integração no banco `caixinha_test`)         |
-| `npm run check`                                | typecheck + lint + testes + build (use antes de publicar)                      |
-| `npm run db:start` / `db:stop` / `db:status`   | Liga, desliga e verifica o PostgreSQL local                                    |
-| `npm run db:migrate`                           | Cria/aplica migrations (desenvolvimento)                                       |
-| `npm run db:deploy`                            | Aplica migrations em produção                                                  |
-| `npm run db:seed`                              | Dados fictícios de demonstração (bloqueado em produção)                        |
-| `npm run db:studio`                            | Interface visual do banco                                                      |
-| `npm run admin:create -- --email E --name "N"` | Cria um administrador (sem senha conhecida; definir via "Esqueci minha senha") |
+| Comando                                             | O que faz                                                                      |
+| --------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `npm run dev`                                       | Servidor de desenvolvimento                                                    |
+| `npm run build` / `npm start`                       | Build e execução de produção                                                   |
+| `npm run typecheck`                                 | Gera tipos de rotas e verifica TypeScript                                      |
+| `npm run lint`                                      | ESLint                                                                         |
+| `npm test`                                          | Testes automatizados (unitários + integração no banco `caixinha_test`)         |
+| `npm run test:e2e`                                  | Testes de ponta a ponta (Playwright, build de produção, banco `caixinha_e2e`)  |
+| `npm run check`                                     | typecheck + lint + testes + build (use antes de publicar)                      |
+| `npm run db:start` / `db:stop` / `db:status`        | Liga, desliga e verifica o PostgreSQL local                                    |
+| `npm run db:migrate`                                | Cria/aplica migrations (desenvolvimento)                                       |
+| `npm run db:deploy`                                 | Aplica migrations em produção                                                  |
+| `npm run db:seed`                                   | Dados fictícios de demonstração (bloqueado em produção)                        |
+| `npm run db:studio`                                 | Interface visual do banco                                                      |
+| `npm run admin:create -- --email E --name "N"`      | Cria um administrador (sem senha conhecida; definir via "Esqueci minha senha") |
+| `npm run admin:reset-2fa -- --email E --reason "M"` | Remove o 2FA de quem perdeu o celular e os códigos (auditado)                  |
+| `npm run backup`                                    | Backup do banco + arquivos, com manifesto e retenção                           |
 
 ## Estrutura
 
 ```
 prisma/            schema, migrations (inclui gatilhos de integridade) e seed
-scripts/           criar admin, PostgreSQL local (local-postgres.mjs)
+scripts/           criar admin, recuperar 2FA, backup, PostgreSQL local (local-postgres.mjs)
 public/            service worker, logotipo
 src/app/           rotas (auth), (admin)/admin, (participante)/minha-caixinha, api
 src/components/    ui/ (design system), layout/, brand/ (logotipo), pwa/
 src/domain/        regras PURAS (sem I/O): dinheiro, datas, parcelas, contribuições, livro-caixa, regras
-src/modules/       auth, audit, participants, cycles, payments, ledger, files
+src/modules/       auth, audit, participants, cycles, payments, ledger, files, results, reports,
+                   fundraising, pix, notifications, privacy, dashboard, receipts, announcements
                    (cada um: schemas, service, actions; queries quando houver)
 src/lib/           env validado, banco, e-mail, senha, utilitários
-tests/             unit/ e integration/
+tests/             unit/ e integration/ (Vitest)
+e2e/               testes de ponta a ponta (Playwright)
 docs/              documentação técnica
 ```
 

@@ -1,30 +1,14 @@
 import type { NextConfig } from "next";
+import { API_CSP } from "./src/lib/csp";
 
 const isProd = process.env.NODE_ENV === "production";
 
 /**
- * Content-Security-Policy.
- * 'unsafe-inline' em script-src é exigido pelos scripts de hidratação do Next.js
- * sem nonce; ver docs/seguranca.md (melhoria futura: CSP com nonce).
+ * Content-Security-Policy: as PÁGINAS recebem uma CSP com nonce gerada a cada requisição
+ * em src/proxy.ts (src/lib/csp.ts). Aqui, só a CSP mínima das rotas de API.
  */
-const csp = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "worker-src 'self'",
-  "manifest-src 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-  ...(isProd ? ["upgrade-insecure-requests"] : []),
-].join("; ");
 
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: csp },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -53,6 +37,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      { source: "/api/:path*", headers: [{ key: "Content-Security-Policy", value: API_CSP }] },
       {
         source: "/sw.js",
         headers: [

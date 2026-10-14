@@ -35,9 +35,13 @@ npm run admin:create -- --email voce@exemplo.com --name "Seu Nome"
 npm start                # porta 3000 (use um proxy reverso com HTTPS)
 ```
 
-Depois: na tela de login, use "Esqueci minha senha" para definir a senha do administrador.
+Depois: na tela de login, use "Esqueci minha senha" para definir a senha do administrador. No primeiro acesso, o
+sistema exige a configuração da verificação em duas etapas (aplicativo autenticador + códigos de recuperação).
 
-Agende a tarefa diária (lembretes e expiração de cobranças), 1×/dia:
+Administrador que perder o celular E os códigos: `npm run admin:reset-2fa -- --email E --reason "motivo"`
+(executado no servidor, após confirmar a identidade da pessoa; fica na auditoria).
+
+Agende a tarefa diária (lembretes, expiração de cobranças e limpeza de comprovantes órfãos), 1×/dia:
 
 ```bash
 curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://SEU-DOMINIO/api/tarefas/diarias
@@ -48,7 +52,9 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://SEU-DOMINIO/api/tarefa
 - [ ] Todas as verificações de `npm run check` passando
 - [ ] Backup automático configurado **e** restauração testada
 - [ ] HTTPS ativo; HSTS conferido
-- [ ] 2FA para administradores (Fase 7)
+- [ ] Administradores com 2FA configurado e códigos de recuperação guardados
+- [ ] `npm run test:e2e` passando (build de produção)
+- [ ] `npm run backup` agendado e restauração testada
 - [ ] Termo de uso e aviso de privacidade publicados
 - [ ] Recursos sensíveis permanecem desligados até parecer jurídico
 - [ ] `PIX_PROVIDER=manual` e chave da conta da caixinha conferida (titular = estrutura jurídica)

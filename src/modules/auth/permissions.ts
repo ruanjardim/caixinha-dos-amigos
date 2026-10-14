@@ -89,6 +89,11 @@ export type Actor = {
   status: "ACTIVE" | "SUSPENDED";
   /** Cadastro de participante vinculado ao usuário (se houver). */
   participantId: string | null;
+  /**
+   * Administrador que ainda não ativou a verificação em duas etapas (obrigatória):
+   * fica só com as permissões de participante até concluir a configuração.
+   */
+  twoFactorPending?: boolean;
 };
 
 export function isRole(value: unknown): value is Role {
@@ -97,6 +102,7 @@ export function isRole(value: unknown): value is Role {
 
 export function hasPermission(actor: Actor | null, permission: Permission): boolean {
   if (!actor || actor.status !== "ACTIVE") return false;
+  if (actor.twoFactorPending && ADMIN_PERMISSIONS.includes(permission)) return false;
   return ROLE_PERMISSIONS[actor.role]?.has(permission) ?? false;
 }
 
