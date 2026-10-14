@@ -30,6 +30,8 @@ const HISTORY_LABEL: Record<string, string> = {
   "payment.reject": "Recusado",
   "payment.reverse": "Estornado",
   "payment.edit": "Dados corrigidos",
+  "pix.webhook.paid": "Recebido pelo webhook Pix",
+  "pix.webhook.refund": "Pix devolvido pelo provedor",
 };
 
 export default async function PaymentPage({ params }: PageProps<"/admin/pagamentos/[id]">) {
@@ -69,8 +71,26 @@ export default async function PaymentPage({ params }: PageProps<"/admin/pagament
             <Item label="Registrado por">
               {p.registeredBy
                 ? `${p.registeredBy.name}${p.registeredBy.role === "PARTICIPANT" ? " (participante)" : ""}`
-                : "—"}
+                : p.pixCharge
+                  ? "Webhook Pix (sistema)"
+                  : "—"}
             </Item>
+            {p.pixCharge && (
+              <Item label="Cobrança Pix">
+                <Link
+                  href={`/admin/pix/${p.pixCharge.id}`}
+                  className="text-brand-700 font-mono text-xs hover:underline"
+                >
+                  {p.pixCharge.externalId}
+                </Link>
+                {p.pixCharge.isSimulation && (
+                  <span className="text-warning block text-xs font-semibold">Simulação</span>
+                )}
+                {p.pixCharge.amountCents !== p.amountCents && (
+                  <span className="text-warning block text-xs font-semibold">Valor diferente do cobrado</span>
+                )}
+              </Item>
+            )}
             {p.confirmedBy && (
               <Item label="Confirmado por">
                 {p.confirmedBy.name} em {p.confirmedAt ? formatDateTime(p.confirmedAt) : "—"}

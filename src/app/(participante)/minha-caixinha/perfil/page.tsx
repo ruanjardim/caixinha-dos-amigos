@@ -1,21 +1,23 @@
 import { ActionForm } from "@/components/forms/action-form";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field } from "@/components/ui/field";
+import { CheckboxField, Field } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatDateBR, toISODate } from "@/domain/dates";
 import { db } from "@/lib/db";
 import { formatPhone } from "@/lib/format";
 import { requirePagePermission } from "@/modules/auth/session";
 import { updateOwnProfileAction } from "@/modules/participants/actions";
+import { updateNotificationPreferenceAction } from "@/modules/notifications/actions";
 
 export const metadata = { title: "Meus dados" };
 
 export default async function ProfilePage() {
   const user = await requirePagePermission("self.profile.update");
-  const participant = user.participantId
-    ? await db.participant.findUnique({ where: { id: user.participantId } })
-    : null;
+  const [participant, account] = await Promise.all([
+    user.participantId ? db.participant.findUnique({ where: { id: user.participantId } }) : null,
+    db.user.findUnique({ where: { id: user.userId }, select: { emailNotifications: true } }),
+  ]);
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -65,6 +67,21 @@ export default async function ProfilePage() {
           </Card>
         </>
       )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Avisos por e-mail</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActionForm action={updateNotificationPreferenceAction} submitLabel="Salvar preferência">
+            <CheckboxField
+              name="emailNotifications"
+              label="Quero receber avisos por e-mail"
+              hint="Lembretes de vencimento, confirmação de pagamentos, comunicados e resultados. E-mails de segurança (como redefinição de senha) são sempre enviados."
+              defaultChecked={account?.emailNotifications ?? true}
+            />
+          </ActionForm>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -87,3 +87,15 @@ export const ACTIVITY_TYPE_LABEL: Record<string, string> = {
 
 export const ActivityStatusBadge = make(ACTIVITY_STATUS);
 export const ComplianceBadge = make(COMPLIANCE);
+
+const PIX_CHARGE: Record<string, { label: string; tone: Tone }> = {
+  CREATED: { label: "Criada", tone: "gray" },
+  ACTIVE: { label: "Aguardando pagamento", tone: "blue" },
+  PAID: { label: "Paga", tone: "green" },
+  EXPIRED: { label: "Expirada", tone: "gray" },
+  CANCELLED: { label: "Cancelada", tone: "gray" },
+  REFUNDED: { label: "Devolvida", tone: "red" },
+  FAILED: { label: "Falhou", tone: "red" },
+};
+
+export const PixChargeStatusBadge = make(PIX_CHARGE);

@@ -15,31 +15,31 @@ Fonte da verdade: [`src/modules/auth/permissions.ts`](../src/modules/auth/permis
 
 ## Matriz
 
-| Permissão | Administrador | Participante |
-| --- | :---: | :---: |
-| Gerenciar participantes, usuários | ✅ | — |
-| Criar/configurar ciclos e cotas | ✅ | — |
-| Registrar e confirmar pagamentos | ✅ | — |
-| Despesas, receitas, livro-caixa | ✅ | — |
-| Atividades de arrecadação | ✅ | — |
-| Apurar e aprovar resultados | ✅ | — |
-| Configurar remuneração administrativa | ✅ | — |
-| Encerrar ciclos | ✅ | — |
-| Relatórios consolidados | ✅ | — |
-| Consultar auditoria | ✅ | — |
-| Decidir conformidade | ✅ | — |
-| Próprio painel, extrato, recibos | ✅¹ | ✅ |
-| Informar pagamento (fica "em análise") | ✅¹ | ✅ |
-| Atualizar dados pessoais liberados | ✅¹ | ✅ |
-| Aceitar regras do ciclo | ✅¹ | ✅ |
-| Publicar comunicados | ✅ | — |
-| Atividades de arrecadação (cadastro, números, lançamentos) | ✅ | — (vê as atividades dos seus ciclos e os próprios números) |
-| Pareceres de conformidade e recursos sensíveis | ✅ | — |
-| Relatórios coletivos autorizados (prestação de contas), ler comunicados | ✅ | ✅ |
-| Relatórios consolidados (PDF/Excel) | ✅ | — |
-| Relatório de prestação de contas e extrato individual (PDF/Excel) | ✅ | ✅ (só do próprio ciclo / próprios dados) |
-| Apurar, aprovar, distribuir, encerrar ciclo, conciliar | ✅ | — |
-| Baixar recibo PDF | ✅ (qualquer pagamento confirmado) | ✅ (somente os próprios) |
+| Permissão                                                               |           Administrador            |                        Participante                        |
+| ----------------------------------------------------------------------- | :--------------------------------: | :--------------------------------------------------------: |
+| Gerenciar participantes, usuários                                       |                 ✅                 |                             —                              |
+| Criar/configurar ciclos e cotas                                         |                 ✅                 |                             —                              |
+| Registrar e confirmar pagamentos                                        |                 ✅                 |                             —                              |
+| Despesas, receitas, livro-caixa                                         |                 ✅                 |                             —                              |
+| Atividades de arrecadação                                               |                 ✅                 |                             —                              |
+| Apurar e aprovar resultados                                             |                 ✅                 |                             —                              |
+| Configurar remuneração administrativa                                   |                 ✅                 |                             —                              |
+| Encerrar ciclos                                                         |                 ✅                 |                             —                              |
+| Relatórios consolidados                                                 |                 ✅                 |                             —                              |
+| Consultar auditoria                                                     |                 ✅                 |                             —                              |
+| Decidir conformidade                                                    |                 ✅                 |                             —                              |
+| Próprio painel, extrato, recibos                                        |                ✅¹                 |                             ✅                             |
+| Informar pagamento (fica "em análise")                                  |                ✅¹                 |                             ✅                             |
+| Atualizar dados pessoais liberados                                      |                ✅¹                 |                             ✅                             |
+| Aceitar regras do ciclo                                                 |                ✅¹                 |                             ✅                             |
+| Publicar comunicados                                                    |                 ✅                 |                             —                              |
+| Atividades de arrecadação (cadastro, números, lançamentos)              |                 ✅                 | — (vê as atividades dos seus ciclos e os próprios números) |
+| Pareceres de conformidade e recursos sensíveis                          |                 ✅                 |                             —                              |
+| Relatórios coletivos autorizados (prestação de contas), ler comunicados |                 ✅                 |                             ✅                             |
+| Relatórios consolidados (PDF/Excel)                                     |                 ✅                 |                             —                              |
+| Relatório de prestação de contas e extrato individual (PDF/Excel)       |                 ✅                 |         ✅ (só do próprio ciclo / próprios dados)          |
+| Apurar, aprovar, distribuir, encerrar ciclo, conciliar                  |                 ✅                 |                             —                              |
+| Baixar recibo PDF                                                       | ✅ (qualquer pagamento confirmado) |                  ✅ (somente os próprios)                  |
 
 ¹ Somente se o administrador também tiver cadastro de participante vinculado, e apenas para os próprios dados.
 

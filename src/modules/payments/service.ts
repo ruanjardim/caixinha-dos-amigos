@@ -467,6 +467,7 @@ export async function getPayment(paymentId: string) {
       confirmedBy: { select: { name: true } },
       registeredBy: { select: { name: true, role: true } },
       proofFile: { select: { id: true, fileName: true, sizeBytes: true, contentType: true } },
+      pixCharge: { select: { id: true, externalId: true, amountCents: true, isSimulation: true, status: true } },
     },
   });
 }

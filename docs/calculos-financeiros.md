@@ -23,18 +23,19 @@ Exemplo: João tem 2 cotas de R$ 50 → mensalidade R$ 100 → previsto em 12 me
 **Regra de cobertura (implementada):** o total recebido (somente pagamentos CONFIRMADOS; estornados e recusados não
 contam; "em análise" aparece à parte e NÃO cobre parcelas) cobre as parcelas ativas em ordem de competência.
 
-| Situação | Critério |
-| --- | --- |
-| Paga | totalmente coberta |
-| Antecipada | totalmente coberta e com vencimento ainda no futuro |
-| Parcial | coberta em parte |
-| Em atraso | vencimento **antes** de hoje e não totalmente coberta (o próprio dia do vencimento não é atraso) |
-| A vencer | sem cobertura e vencimento hoje ou no futuro |
+| Situação   | Critério                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| Paga       | totalmente coberta                                                                               |
+| Antecipada | totalmente coberta e com vencimento ainda no futuro                                              |
+| Parcial    | coberta em parte                                                                                 |
+| Em atraso  | vencimento **antes** de hoje e não totalmente coberta (o próprio dia do vencimento não é atraso) |
+| A vencer   | sem cobertura e vencimento hoje ou no futuro                                                     |
 
 Valor recebido acima do total previsto vira **crédito** (excedente), exibido à parte. "Hoje" é a data no fuso de
 Brasília.
 
 Exemplos testados (João, 2 cotas de R$ 50, vencimento dia 10):
+
 - R$ 60 em dezembro → dez/2026 parcial (R$ 40 em aberto).
 - R$ 350 em dezembro → dez, jan e fev pagas; mar parcial (R$ 50).
 - R$ 1.200 em dezembro → as 12 parcelas cobertas (11 antecipadas).
@@ -66,7 +67,7 @@ distribuível = resultado líquido − remuneração      (se resultado ≤ 0, d
 
 ## 5. Distribuição — saldo diário proporcional
 
-Para cada participante *i*, considerando somente pagamentos **confirmados**, pela **data de crédito**:
+Para cada participante _i_, considerando somente pagamentos **confirmados**, pela **data de crédito**:
 
 ```
 peso_i  = Σ (valor_pagamento × dias entre o crédito e a data de corte)
@@ -82,27 +83,27 @@ cota_i  = distribuível × peso_i / Σ pesos
 
 Ciclo de 01/12/2026 a 30/11/2027, data de corte 01/12/2027, resultado líquido R$ 1.400, 10% administrativo.
 
-| | Ana (antecipou tudo) | Bruno (R$ 100 todo dia 1º) |
-| --- | --- | --- |
-| Total pago | R$ 1.200 em 01/12/2026 | 12 × R$ 100 |
-| Peso (R$·dia) | 1.200 × 365 = 438.000 | 100 × (365+334+303+275+244+214+183+153+122+91+61+30) = 237.500 |
-| Participação | 64,84% | 35,16% |
-| Valor bruto | R$ 816,9948 | R$ 443,0052 |
-| **Valor final** | **R$ 816,99** | **R$ 443,01** (maior resto recebe o centavo) |
+|                 | Ana (antecipou tudo)   | Bruno (R$ 100 todo dia 1º)                                     |
+| --------------- | ---------------------- | -------------------------------------------------------------- |
+| Total pago      | R$ 1.200 em 01/12/2026 | 12 × R$ 100                                                    |
+| Peso (R$·dia)   | 1.200 × 365 = 438.000  | 100 × (365+334+303+275+244+214+183+153+122+91+61+30) = 237.500 |
+| Participação    | 64,84%                 | 35,16%                                                         |
+| Valor bruto     | R$ 816,9948            | R$ 443,0052                                                    |
+| **Valor final** | **R$ 816,99**          | **R$ 443,01** (maior resto recebe o centavo)                   |
 
 Total: R$ 1.260,00. Os dois contribuíram com o mesmo valor; Ana recebe mais porque o dinheiro dela ficou disponível
 por mais tempo, conforme as regras aprovadas.
 
 ## 6. Decisões do grupo (política v1, 14/10/2026)
 
-| Tema | Regra |
-| --- | --- |
-| Data de corte | Fim das contribuições. Conta-se até o dia seguinte a ela (exclusivo): crédito em 01/12/2026 e fim em 30/11/2027 = 365 dias |
-| Pagamento antes do início do ciclo | Conta dias a partir do início do ciclo |
-| Estornos e devoluções | Subtraem a partir da sua data (o valor conta só pelos dias em que ficou na caixinha) |
-| Pagamento após a data de corte | Não gera peso; o principal continua devido |
-| Resultado negativo (prejuízo) | Sem remuneração administrativa; rateado proporcionalmente ao principal mantido na caixinha na apuração (quem já recebeu o principal ao sair não é cobrado) |
-| Saída no meio do ciclo | Principal devolvido na saída; participa do resultado só pelos dias até a devolução |
+| Tema                               | Regra                                                                                                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data de corte                      | Fim das contribuições. Conta-se até o dia seguinte a ela (exclusivo): crédito em 01/12/2026 e fim em 30/11/2027 = 365 dias                                 |
+| Pagamento antes do início do ciclo | Conta dias a partir do início do ciclo                                                                                                                     |
+| Estornos e devoluções              | Subtraem a partir da sua data (o valor conta só pelos dias em que ficou na caixinha)                                                                       |
+| Pagamento após a data de corte     | Não gera peso; o principal continua devido                                                                                                                 |
+| Resultado negativo (prejuízo)      | Sem remuneração administrativa; rateado proporcionalmente ao principal mantido na caixinha na apuração (quem já recebeu o principal ao sair não é cobrado) |
+| Saída no meio do ciclo             | Principal devolvido na saída; participa do resultado só pelos dias até a devolução                                                                         |
 
 Essas regras constam do texto padrão das regras (cláusulas 6, 6.1 e 6.2) e são aceitas pelos participantes.
 

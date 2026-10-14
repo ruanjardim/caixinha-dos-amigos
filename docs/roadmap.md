@@ -36,15 +36,15 @@ pagamento → conferir/confirmar → livro-caixa) ✅ · páginas sem rolagem la
 
 ### Decisões adotadas por padrão (podem ser revistas)
 
-| Tema | Padrão implementado |
-| --- | --- |
-| Data de referência do pagamento | Data de **crédito na conta** (informada e conferida na confirmação) |
-| Dia de vencimento | Configurável por ciclo (padrão 10) |
-| Multa/juros por atraso | Não há |
-| Entrada no meio do ciclo | Deve a partir do mês de entrada |
-| Alteração de cotas | Só para parcelas ainda não vencidas, com motivo |
-| Saída no meio do ciclo | Parcelas seguintes deixam de ser devidas; devolução e resultados: **pendente (Fase 4)** |
-| Administrador participante | Outro administrador confirma; se único, justificativa obrigatória |
+| Tema                            | Padrão implementado                                                                     |
+| ------------------------------- | --------------------------------------------------------------------------------------- |
+| Data de referência do pagamento | Data de **crédito na conta** (informada e conferida na confirmação)                     |
+| Dia de vencimento               | Configurável por ciclo (padrão 10)                                                      |
+| Multa/juros por atraso          | Não há                                                                                  |
+| Entrada no meio do ciclo        | Deve a partir do mês de entrada                                                         |
+| Alteração de cotas              | Só para parcelas ainda não vencidas, com motivo                                         |
+| Saída no meio do ciclo          | Parcelas seguintes deixam de ser devidas; devolução e resultados: **pendente (Fase 4)** |
+| Administrador participante      | Outro administrador confirma; se único, justificativa obrigatória                       |
 
 ## Fase 3 — Painéis ✅ (14/10/2026)
 
@@ -98,11 +98,28 @@ ciclo de demonstração no navegador ✅ · relatórios PDF/Excel baixados ✅.
 Verificações: testes ✅ (inclui simulação sem dinheiro, bloqueios de conformidade, transação repetida, resultado
 oficial único, imutabilidade no banco) · fluxo de simulação no navegador ✅ · participante vê só os próprios números ✅.
 
+## Fase 6 — Integrações ✅ (14/10/2026)
+
+- Pix em dois modos: **simulação** (padrão, sem dinheiro real) e **manual** (conta da caixinha; CPF recusado).
+  BR Code padrão Banco Central (TLV + CRC16) com QR Code e copia e cola; cobrança com identificador e validade.
+- Webhook assinado (HMAC-SHA256 + janela de tempo), idempotente, com registro imutável de todos os eventos —
+  inclusive os rejeitados. Tratamento de duplicidade, valor divergente, pagamento tardio, cobrança desconhecida,
+  devoluções (antes e depois da conferência) e expiração. Nenhum pagamento é confirmado automaticamente.
+- Tela **Pix e conciliação** com ambiente de simulação (pagar, reenviar, segundo pagamento, devolução, expiração,
+  assinatura inválida) usando o mesmo caminho do webhook real.
+- Participante vê as próprias cobranças abertas e, no modo manual, a chave da caixinha.
+- Notificações por e-mail (pagamentos, comunicados, resultados, Pix, lembretes de vencimento) com envio único,
+  preferência do usuário e registro de falhas; tarefa diária protegida por segredo.
+- Detalhes em [integracoes.md](integracoes.md).
+
+Verificações: testes ✅ (BR Code contra o exemplo oficial, assinatura, todos os casos de conciliação, imutabilidade
+dos eventos, isolamento entre participantes, envio único/preferência/falha, lembretes) · webhook via HTTP ✅ ·
+fluxo no navegador (cobrança → pagamento simulado → em análise) ✅ · visão do participante no celular ✅.
+
 ## Próximas fases
 
-| Fase | Escopo |
-| --- | --- |
-| 6 — Integrações | Pix manual/simulado (QR, copia e cola), webhooks idempotentes, conciliação, notificações |
+| Fase          | Escopo                                                                                                     |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
 | 7 — Qualidade | 2FA para administradores, CSP com nonce, testes E2E (Playwright), revisão de segurança, documentação final |
 
 ## Decisões tomadas para a Fase 4 (14/10/2026)
@@ -125,6 +142,9 @@ administrativa, estrutura da conta de recebimento).
 - CSP ainda permite `'unsafe-inline'` em scripts; 2FA ainda não implementado; sem testes E2E automatizados (fluxo
   verificado manualmente no navegador).
 - Itens de menu das próximas fases aparecem como "em breve".
+- Pix real (PSP) não está integrado: só simulação e modo manual. Requisições ao webhook com assinatura inválida
+  são registradas (amostra limitada); limitação de taxa por IP no webhook prevista para a Fase 7.
+- Os lembretes dependem de um agendador externo chamar a tarefa diária.
 - Painéis e gráficos apenas em tema claro (identidade visual do projeto).
 - Recibos usam a fonte Helvetica embutida no PDF (acentos do português suportados; sem emojis).
 - Relatórios em PDF usam a fonte Helvetica embutida: símbolos fora da codificação (ex.: Σ, sinal de menos tipográfico) são trocados por equivalentes.

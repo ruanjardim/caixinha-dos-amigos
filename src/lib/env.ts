@@ -16,6 +16,14 @@ const schema = z.object({
   SMTP_PASSWORD: z.string().optional().default(""),
   MAIL_FROM: z.string().default("Caixinha dos Amigos <nao-responda@exemplo.com>"),
   PIX_PROVIDER: z.enum(["manual", "simulated"]).default("simulated"),
+  /** Segredo para assinar/verificar webhooks do provedor Pix (HMAC-SHA256). */
+  PIX_WEBHOOK_SECRET: z.string().min(32, "PIX_WEBHOOK_SECRET deve ter ao menos 32 caracteres"),
+  /** Modo manual: chave Pix DA CAIXINHA (conta da estrutura jurídica — nunca conta pessoal). Opcional. */
+  PIX_MANUAL_KEY: z.string().trim().optional().default(""),
+  PIX_MANUAL_RECEIVER_NAME: z.string().trim().optional().default(""),
+  PIX_MANUAL_CITY: z.string().trim().optional().default(""),
+  /** Segredo das tarefas agendadas (ex.: lembretes de vencimento). */
+  CRON_SECRET: z.string().min(32, "CRON_SECRET deve ter ao menos 32 caracteres"),
 });
 
 const parsed = schema.safeParse(process.env);

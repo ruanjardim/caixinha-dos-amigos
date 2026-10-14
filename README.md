@@ -4,7 +4,7 @@ Plataforma web para administrar a caixinha coletiva de um grupo privado: cotas m
 livro-caixa, prestação de contas e apuração/distribuição de resultados — com transparência para os participantes
 e rastreabilidade completa para a administração.
 
-> **Status:** Fases 1 a 5 concluídas (fundação, gestão financeira, painéis, resultados e arrecadação). Veja [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Fases 1 a 6 concluídas (fundação, gestão financeira, painéis, resultados, arrecadação e integrações). Veja [docs/roadmap.md](docs/roadmap.md).
 >
 > A plataforma **não realiza investimentos** e **não promete rendimento**. Recursos sensíveis (Pix real, venda de
 > números de sorteio, pagamento da remuneração administrativa) ficam **desligados por padrão** até validação
@@ -12,19 +12,19 @@ e rastreabilidade completa para a administração.
 
 ## Stack
 
-| Camada       | Tecnologia                                                         |
-| ------------ | ------------------------------------------------------------------ |
-| Aplicação    | Next.js 16 (App Router) + React 19 + TypeScript (strict)           |
+| Camada       | Tecnologia                                                                       |
+| ------------ | -------------------------------------------------------------------------------- |
+| Aplicação    | Next.js 16 (App Router) + React 19 + TypeScript (strict)                         |
 | Banco        | PostgreSQL 17 local (binários oficiais via `embedded-postgres`); 16+ em produção |
-| ORM          | Prisma 7 (driver adapter `pg`)                                     |
-| Autenticação | Better Auth 1.7 — sessões no banco, senhas argon2id, rate limiting |
-| Validação    | Zod 4                                                              |
-| Interface    | Tailwind CSS 4, lucide-react, fonte Plus Jakarta Sans              |
-| Gráficos     | Recharts 3 (paleta validada para daltonismo e contraste)           |
-| PDF          | @react-pdf/renderer (recibos e relatórios, gerados no servidor)     |
-| Excel        | ExcelJS (relatórios .xlsx com valores numéricos)                   |
-| PWA          | Manifest + service worker próprio (`public/sw.js`)                 |
-| Testes       | Vitest 5 (unitários + integração com o banco)                      |
+| ORM          | Prisma 7 (driver adapter `pg`)                                                   |
+| Autenticação | Better Auth 1.7 — sessões no banco, senhas argon2id, rate limiting               |
+| Validação    | Zod 4                                                                            |
+| Interface    | Tailwind CSS 4, lucide-react, fonte Plus Jakarta Sans                            |
+| Gráficos     | Recharts 3 (paleta validada para daltonismo e contraste)                         |
+| PDF          | @react-pdf/renderer (recibos e relatórios, gerados no servidor)                  |
+| Excel        | ExcelJS (relatórios .xlsx com valores numéricos)                                 |
+| PWA          | Manifest + service worker próprio (`public/sw.js`)                               |
+| Testes       | Vitest 5 (unitários + integração com o banco)                                    |
 
 ## Requisitos
 
@@ -54,19 +54,19 @@ Em desenvolvimento, e-mails (ex.: recuperação de senha) **não são enviados**
 
 ## Comandos
 
-| Comando                                   | O que faz                                          |
-| ----------------------------------------- | -------------------------------------------------- |
-| `npm run dev`                             | Servidor de desenvolvimento                        |
-| `npm run build` / `npm start`             | Build e execução de produção                       |
-| `npm run typecheck`                       | Gera tipos de rotas e verifica TypeScript          |
-| `npm run lint`                            | ESLint                                             |
-| `npm test`                                | Testes automatizados (unitários + integração no banco `caixinha_test`) |
-| `npm run check`                           | typecheck + lint + testes + build (use antes de publicar) |
-| `npm run db:start` / `db:stop` / `db:status` | Liga, desliga e verifica o PostgreSQL local     |
-| `npm run db:migrate`                      | Cria/aplica migrations (desenvolvimento)           |
-| `npm run db:deploy`                       | Aplica migrations em produção                      |
-| `npm run db:seed`                         | Dados fictícios de demonstração (bloqueado em produção) |
-| `npm run db:studio`                       | Interface visual do banco                          |
+| Comando                                        | O que faz                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------ |
+| `npm run dev`                                  | Servidor de desenvolvimento                                                    |
+| `npm run build` / `npm start`                  | Build e execução de produção                                                   |
+| `npm run typecheck`                            | Gera tipos de rotas e verifica TypeScript                                      |
+| `npm run lint`                                 | ESLint                                                                         |
+| `npm test`                                     | Testes automatizados (unitários + integração no banco `caixinha_test`)         |
+| `npm run check`                                | typecheck + lint + testes + build (use antes de publicar)                      |
+| `npm run db:start` / `db:stop` / `db:status`   | Liga, desliga e verifica o PostgreSQL local                                    |
+| `npm run db:migrate`                           | Cria/aplica migrations (desenvolvimento)                                       |
+| `npm run db:deploy`                            | Aplica migrations em produção                                                  |
+| `npm run db:seed`                              | Dados fictícios de demonstração (bloqueado em produção)                        |
+| `npm run db:studio`                            | Interface visual do banco                                                      |
 | `npm run admin:create -- --email E --name "N"` | Cria um administrador (sem senha conhecida; definir via "Esqueci minha senha") |
 
 ## Estrutura
@@ -95,4 +95,5 @@ docs/              documentação técnica
 - [Backup e restauração](docs/backup.md)
 - [Implantação](docs/implantacao.md)
 - [Conformidade jurídica](docs/conformidade.md)
+- [Integrações: Pix, conciliação e notificações](docs/integracoes.md)
 - [Roadmap, funcionalidades e pendências](docs/roadmap.md)

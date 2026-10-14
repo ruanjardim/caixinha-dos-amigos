@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { toActionError, type ActionState } from "@/lib/errors";
 import { formToObject } from "@/lib/validation";
 import { requirePermission } from "@/modules/auth/session";
+import { notifyAfterResponse } from "@/modules/notifications/schedule";
+import { notifyResultsApproved } from "@/modules/notifications/service";
 import {
   adminFeePaymentSchema,
   calculationIdSchema,
@@ -46,6 +48,7 @@ export async function approveResultsAction(_: ActionState, formData: FormData): 
     const actor = await requirePermission("results.approve");
     const { calculationId } = calculationIdSchema.parse(formToObject(formData));
     await approveResults(actor, calculationId);
+    notifyAfterResponse(() => notifyResultsApproved(calculationId));
     revalidateAll();
     return { ok: true, message: "Apuração aprovada. Agora registre os pagamentos aos participantes." };
   } catch (e) {

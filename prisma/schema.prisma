@@ -34,15 +34,17 @@ enum UserStatus {
 }
 
 model User {
-  id            String     @id
-  name          String
-  email         String     @unique
-  emailVerified Boolean    @default(false)
-  image         String?
-  role          Role       @default(PARTICIPANT)
-  status        UserStatus @default(ACTIVE)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                 String     @id
+  name               String
+  email              String     @unique
+  emailVerified      Boolean    @default(false)
+  image              String?
+  role               Role       @default(PARTICIPANT)
+  status             UserStatus @default(ACTIVE)
+  /// Aceita receber avisos por e-mail (lembretes, confirmações). E-mails de segurança sempre são enviados.
+  emailNotifications Boolean    @default(true)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   sessions    Session[]
   accounts    Account[]
@@ -261,6 +263,7 @@ model Membership {
   installments Installment[]
   payments     Payment[]
   shares       ResultShare[]
+  pixCharges   PixCharge[]
 
   @@unique([participantId, cycleId])
   @@map("membership")
@@ -688,25 +691,63 @@ model PixCharge {
   status       PixChargeStatus @default(CREATED)
   expiresAt    DateTime?
   isSimulation Boolean         @default(true)
+  /// Participação cobrada (mensalidade/antecipação).
+  membershipId String?
+  membership   Membership?     @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  description  String?
+  paidAt       DateTime?
+  /// Identificador fim a fim do Pix informado pelo provedor.
+  endToEndId   String?
+  createdById  String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
+  events WebhookEvent[]
+
   @@unique([provider, externalId])
+  @@index([status])
   @@map("pix_charge")
 }
 
 model WebhookEvent {
-  id             String    @id @default(cuid())
+  id             String     @id @default(cuid())
   provider       String
   externalId     String // id do evento no provedor (idempotência)
   signatureValid Boolean
   payload        Json
   processedAt    DateTime?
   error          String?
-  receivedAt     DateTime  @default(now())
+  eventType      String?
+  /// Resultado do processamento (ex.: "pago", "duplicado", "valor divergente").
+  outcome        String?
+  chargeId       String?
+  charge         PixCharge? @relation(fields: [chargeId], references: [id], onDelete: Restrict)
+  receivedAt     DateTime   @default(now())
 
   @@unique([provider, externalId])
   @@map("webhook_event")
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
+/// Registro de notificações enviadas (uma por chave: evita envios repetidos).
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String?
+  email     String
+  kind      String // ex.: "payment.confirmed", "due.reminder"
+  dedupeKey String             @unique
+  subject   String
+  status    NotificationStatus
+  error     String?
+  createdAt DateTime           @default(now())
+
+  @@index([createdAt])
+  @@map("notification")
 }
 
 // -----------------------------------------------------------------------------

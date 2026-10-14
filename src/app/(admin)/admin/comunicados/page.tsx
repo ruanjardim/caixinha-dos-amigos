@@ -10,14 +10,16 @@ import { formatDateTime } from "@/lib/format";
 import { createAnnouncementAction, toggleAnnouncementAction } from "@/modules/announcements/actions";
 import { listAnnouncementsForAdmin } from "@/modules/announcements/service";
 import { requirePagePermission } from "@/modules/auth/session";
+import { listNotificationLog, NOTIFICATION_KIND_LABEL } from "@/modules/notifications/service";
 
 export const metadata = { title: "Comunicados" };
 
 export default async function AdminAnnouncementsPage() {
   await requirePagePermission("announcements.manage");
-  const [items, cycles] = await Promise.all([
+  const [items, cycles, log] = await Promise.all([
     listAnnouncementsForAdmin(),
     db.cycle.findMany({ orderBy: { startDate: "desc" }, select: { id: true, name: true } }),
+    listNotificationLog(),
   ]);
 
   return (
@@ -95,6 +97,54 @@ export default async function AdminAnnouncementsPage() {
               </li>
             ))}
           </ul>
+        )}
+      </Card>
+
+      <Card className="overflow-hidden">
+        <CardHeader className="flex-col gap-1">
+          <CardTitle>Avisos por e-mail enviados</CardTitle>
+          <p className="text-muted text-sm">
+            Cada aviso é enviado uma única vez. Quem desativou os avisos aparece como “não enviado (preferência)”.
+          </p>
+        </CardHeader>
+        {log.length === 0 ? (
+          <EmptyState title="Nenhum aviso enviado ainda" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] text-sm">
+              <thead className="text-muted bg-canvas text-left text-xs">
+                <tr>
+                  <th className="px-4 py-2 font-semibold">Quando</th>
+                  <th className="px-4 py-2 font-semibold">Tipo</th>
+                  <th className="px-4 py-2 font-semibold">Para</th>
+                  <th className="px-4 py-2 font-semibold">Situação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-line divide-y">
+                {log.map((n) => (
+                  <tr key={n.id}>
+                    <td className="px-4 py-2 whitespace-nowrap">{formatDateTime(n.createdAt)}</td>
+                    <td className="px-4 py-2">
+                      {NOTIFICATION_KIND_LABEL[n.kind] ?? n.kind}
+                      <span className="text-muted block truncate text-xs">{n.subject}</span>
+                    </td>
+                    <td className="px-4 py-2 break-all">{n.email}</td>
+                    <td className="px-4 py-2">
+                      {n.status === "SENT" ? (
+                        <Badge tone="green">Enviado</Badge>
+                      ) : n.status === "SKIPPED" ? (
+                        <Badge tone="gray">Não enviado (preferência)</Badge>
+                      ) : (
+                        <Badge tone="red" title={n.error ?? undefined}>
+                          Falhou
+                        </Badge>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>

@@ -2,30 +2,34 @@
 
 ## Implementado (Fase 1)
 
-| Controle | Como |
-| --- | --- |
-| Senhas | argon2id (19 MiB, t=2, p=1); mínimo 10 caracteres; nunca em texto simples |
-| Sessões | Armazenadas no banco, cookie `httpOnly`, `SameSite=Lax`, `Secure` em produção; expiram em 7 dias; revogadas ao redefinir senha |
-| Cadastro | Desativado; contas criadas somente pela administração |
-| Recuperação de acesso | Link de uso único válido por 1 hora; resposta idêntica para e-mails existentes e inexistentes (não revela participantes) |
-| Rate limiting | Login: 5/min por IP; pedido de redefinição: 3 a cada 15 min; geral: 100/min. Contadores no banco. |
-| CSRF | Better Auth valida a origem das requisições; Server Actions do Next.js comparam Origin/Host; cookies `SameSite=Lax` |
-| XSS | React escapa toda saída; CSP restritiva (`default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`) |
-| SQL Injection | Somente consultas parametrizadas (Prisma) |
-| Cabeçalhos | CSP, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, COOP, HSTS (produção) |
-| Permissões | Verificadas no servidor; isolamento entre participantes (ver [permissoes.md](permissoes.md)) |
-| Auditoria | `audit_log` somente inclusão (garantido por gatilho); campos sensíveis removidos automaticamente |
-| Erros | Mensagens genéricas ao usuário; detalhes só no log do servidor (`toActionError`) |
-| Configuração | `.env` validado na inicialização; segredos nunca no código; `.env` fora do git |
-| Usuário suspenso | Não consegue iniciar sessão; permissões zeradas imediatamente |
-| PWA | Service worker não armazena páginas nem dados financeiros em cache |
-| Comprovantes | Tipo verificado pelo CONTEÚDO (PDF/PNG/JPG/WEBP), máx. 5 MB, nome saneado, hash SHA-256, guardados fora da pasta pública, download com verificação de permissão e `Content-Disposition: attachment` + `nosniff` |
-| Pagamentos | Nunca confirmados automaticamente; anti-duplicidade em 3 níveis (idempotência, referência única no banco, alerta de mesmo valor/data); confirmação atômica |
-| Prestação de contas | Somente totais coletivos; contribuições agregadas por mês; nenhum nome ou valor individual (testado) |
-| Comunicados | Texto simples, exibido sem interpretar HTML (`<script>` aparece como texto — testado) |
-| Recibos | Só para pagamento confirmado, do próprio participante (ou admin); "não encontrado" para terceiros; código HMAC |
-| Relatórios | Permissão por tipo verificada no servidor; "não encontrado" para quem não pode; emissão auditada (exportação de dados pessoais) |
-| Ordem de verificação | Em toda ação: sessão/permissão ANTES de validar dados |
+| Controle              | Como                                                                                                                                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Senhas                | argon2id (19 MiB, t=2, p=1); mínimo 10 caracteres; nunca em texto simples                                                                                                                                       |
+| Sessões               | Armazenadas no banco, cookie `httpOnly`, `SameSite=Lax`, `Secure` em produção; expiram em 7 dias; revogadas ao redefinir senha                                                                                  |
+| Cadastro              | Desativado; contas criadas somente pela administração                                                                                                                                                           |
+| Recuperação de acesso | Link de uso único válido por 1 hora; resposta idêntica para e-mails existentes e inexistentes (não revela participantes)                                                                                        |
+| Rate limiting         | Login: 5/min por IP; pedido de redefinição: 3 a cada 15 min; geral: 100/min. Contadores no banco.                                                                                                               |
+| CSRF                  | Better Auth valida a origem das requisições; Server Actions do Next.js comparam Origin/Host; cookies `SameSite=Lax`                                                                                             |
+| XSS                   | React escapa toda saída; CSP restritiva (`default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`)                                                                                                   |
+| SQL Injection         | Somente consultas parametrizadas (Prisma)                                                                                                                                                                       |
+| Cabeçalhos            | CSP, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, COOP, HSTS (produção)                                                                                                                  |
+| Permissões            | Verificadas no servidor; isolamento entre participantes (ver [permissoes.md](permissoes.md))                                                                                                                    |
+| Auditoria             | `audit_log` somente inclusão (garantido por gatilho); campos sensíveis removidos automaticamente                                                                                                                |
+| Erros                 | Mensagens genéricas ao usuário; detalhes só no log do servidor (`toActionError`)                                                                                                                                |
+| Configuração          | `.env` validado na inicialização; segredos nunca no código; `.env` fora do git                                                                                                                                  |
+| Usuário suspenso      | Não consegue iniciar sessão; permissões zeradas imediatamente                                                                                                                                                   |
+| PWA                   | Service worker não armazena páginas nem dados financeiros em cache                                                                                                                                              |
+| Comprovantes          | Tipo verificado pelo CONTEÚDO (PDF/PNG/JPG/WEBP), máx. 5 MB, nome saneado, hash SHA-256, guardados fora da pasta pública, download com verificação de permissão e `Content-Disposition: attachment` + `nosniff` |
+| Pagamentos            | Nunca confirmados automaticamente; anti-duplicidade em 3 níveis (idempotência, referência única no banco, alerta de mesmo valor/data); confirmação atômica                                                      |
+| Prestação de contas   | Somente totais coletivos; contribuições agregadas por mês; nenhum nome ou valor individual (testado)                                                                                                            |
+| Comunicados           | Texto simples, exibido sem interpretar HTML (`<script>` aparece como texto — testado)                                                                                                                           |
+| Recibos               | Só para pagamento confirmado, do próprio participante (ou admin); "não encontrado" para terceiros; código HMAC                                                                                                  |
+| Relatórios            | Permissão por tipo verificada no servidor; "não encontrado" para quem não pode; emissão auditada (exportação de dados pessoais)                                                                                 |
+| Webhook Pix           | Assinatura HMAC-SHA256 com janela de 5 min, comparação em tempo constante, id de evento único, corpo ≤ 64 KB, registro imutável de todos os eventos (inclusive rejeitados); nunca confirma pagamento sozinho    |
+| Chave Pix             | Simulação usa chave inválida para qualquer banco; modo manual recusa chave CPF (conta pessoal)                                                                                                                  |
+| Tarefa diária         | `Authorization: Bearer <CRON_SECRET>` com comparação em tempo constante; auditada                                                                                                                               |
+| Notificações          | Decisões sobre pagamento vão só ao próprio participante; e-mails sem dados de outros participantes; preferência respeitada; envio único                                                                         |
+| Ordem de verificação  | Em toda ação: sessão/permissão ANTES de validar dados                                                                                                                                                           |
 
 ## Pendente (Fase 7)
 
@@ -34,6 +38,7 @@
 - Registro de tentativas de login malsucedidas na auditoria.
 - Verificação de senhas vazadas (Have I Been Pwned, k-anonimidade).
 - Política de retenção e rotina automatizada de backup.
+- Limitação de taxa por IP no webhook Pix.
 
 ## LGPD
 

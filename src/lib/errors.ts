@@ -5,6 +5,7 @@ import { DateError } from "@/domain/dates";
 import { InstallmentError } from "@/domain/installments";
 import { LedgerError } from "@/domain/ledger";
 import { MoneyError } from "@/domain/money";
+import { PixError } from "@/domain/pix";
 import { Prisma } from "@/generated/prisma/client";
 import { ForbiddenError, UnauthenticatedError } from "@/modules/auth/session";
 
@@ -37,6 +38,7 @@ const SAFE_ERRORS = [
   DateError,
   InstallmentError,
   LedgerError,
+  PixError,
 ];
 
 /**

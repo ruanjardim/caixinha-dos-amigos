@@ -3,7 +3,8 @@ import { ShieldCheck } from "lucide-react";
 import { ActionForm, DuplicateAck } from "@/components/forms/action-form";
 import { MANUAL_PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "@/components/finance/status-badges";
 import { Alert } from "@/components/ui/alert";
-import { Card, CardContent } from "@/components/ui/card";
+import { PixCode } from "@/components/finance/pix-code";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FileField, MoneyField, SelectField, TextareaField } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { todayInBrazil } from "@/domain/dates";
@@ -12,6 +13,10 @@ import { requirePagePermission } from "@/modules/auth/session";
 import { getOwnMemberships } from "@/modules/cycles/queries";
 import { ACCEPTED_UPLOADS } from "@/modules/files/service";
 import { informPaymentAction } from "@/modules/payments/actions";
+import { buildPixPayload } from "@/domain/pix";
+import { formatBRL } from "@/domain/money";
+import { formatDateTime } from "@/lib/format";
+import { openChargesForParticipant, pixMode, qrDataUrl } from "@/modules/pix/queries";
 
 export const metadata = { title: "Informar pagamento" };
 
@@ -21,6 +26,18 @@ export default async function InformPaymentPage() {
   const payable = memberships.filter((m) => m.cycle.status === "OPEN" || m.cycle.status === "CONTRIBUTIONS_CLOSED");
   const first = payable[0];
   const suggested = first ? (first.summary.nextDue?.remainingCents ?? first.quotaCount * first.quotaValueCents) : 0;
+  const charges = user.participantId && payable.length > 0 ? await openChargesForParticipant(user.participantId) : [];
+  const mode = pixMode();
+  // Modo manual: código Pix da conta DA CAIXINHA (sem valor fixo — o participante digita no banco).
+  const manualCode =
+    mode.manualKey && payable.length > 0
+      ? buildPixPayload({
+          key: mode.manualKey.key,
+          merchantName: mode.manualKey.receiverName,
+          merchantCity: mode.manualKey.city,
+        })
+      : null;
+  const manualQr = manualCode ? await qrDataUrl(manualCode) : null;
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -29,6 +46,40 @@ export default async function InformPaymentPage() {
         <Alert tone="info">Você não tem um ciclo aberto recebendo pagamentos no momento.</Alert>
       ) : (
         <>
+          {charges.map((c) => (
+            <Card key={c.id}>
+              <CardHeader className="flex-col gap-1">
+                <CardTitle>Cobrança Pix — {formatBRL(c.amountCents)}</CardTitle>
+                <p className="text-muted text-sm">
+                  {c.membership?.cycle.name}
+                  {c.description ? ` · ${c.description}` : ""}
+                  {c.expiresAt ? ` · válida até ${formatDateTime(c.expiresAt)}` : ""}
+                </p>
+              </CardHeader>
+              <CardContent>
+                {c.copyPaste && <PixCode copyPaste={c.copyPaste} qr={c.qr} simulation={c.isSimulation} />}
+                {!c.isSimulation && (
+                  <p className="text-muted mt-3 text-xs">
+                    Depois de pagar, informe o pagamento abaixo para a administração conferir.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+          {manualCode && mode.manualKey && (
+            <Card>
+              <CardHeader className="flex-col gap-1">
+                <CardTitle>Pix da caixinha</CardTitle>
+                <p className="text-muted text-sm">
+                  Recebedor: <strong>{mode.manualKey.receiverName}</strong> · chave {mode.manualKey.key}. Confira o nome
+                  do recebedor no app do banco antes de pagar.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <PixCode copyPaste={manualCode} qr={manualQr} simulation={false} />
+              </CardContent>
+            </Card>
+          )}
           <Alert tone="info">
             Fez um Pix ou depósito para a conta da caixinha? Informe aqui. O pagamento fica <strong>em análise</strong>{" "}
             até a administração conferir no extrato — o comprovante sozinho não confirma o pagamento.

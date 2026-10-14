@@ -20,6 +20,9 @@ Ver [`.env.example`](../.env.example). Em produção:
 - `BETTER_AUTH_URL`: URL pública (`https://...`).
 - `DATABASE_URL` com `sslmode=require`.
 - `SMTP_*` preenchidos (sem SMTP o envio de e-mails falha em produção).
+- `PIX_PROVIDER="manual"` em produção (a simulação é para testes). `PIX_MANUAL_*` somente com a conta da
+  estrutura jurídica da caixinha (nunca conta pessoal); vazio até lá.
+- `PIX_WEBHOOK_SECRET` e `CRON_SECRET`: 32+ bytes aleatórios, exclusivos do ambiente.
 - **Não** definir `DEV_SEED_PASSWORD`, `LOCAL_PG_*` nem `TEST_DATABASE_URL`.
 
 ## Passos
@@ -34,6 +37,12 @@ npm start                # porta 3000 (use um proxy reverso com HTTPS)
 
 Depois: na tela de login, use "Esqueci minha senha" para definir a senha do administrador.
 
+Agende a tarefa diária (lembretes e expiração de cobranças), 1×/dia:
+
+```bash
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://SEU-DOMINIO/api/tarefas/diarias
+```
+
 ## Checklist antes de publicar
 
 - [ ] Todas as verificações de `npm run check` passando
@@ -42,3 +51,5 @@ Depois: na tela de login, use "Esqueci minha senha" para definir a senha do admi
 - [ ] 2FA para administradores (Fase 7)
 - [ ] Termo de uso e aviso de privacidade publicados
 - [ ] Recursos sensíveis permanecem desligados até parecer jurídico
+- [ ] `PIX_PROVIDER=manual` e chave da conta da caixinha conferida (titular = estrutura jurídica)
+- [ ] Tarefa diária agendada e testada
