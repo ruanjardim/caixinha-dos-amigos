@@ -96,12 +96,16 @@ html[data-theme="dark"] {
 }
 
 /* Tons claros para texto oliva no fundo escuro; seleções continuam brancas. */
+html[data-theme="dark"] .text-brand-600 {
+  color: var(--color-brand-400);
+}
+
 html[data-theme="dark"] .text-brand-700 {
   color: var(--color-brand-300);
 }
 
 html[data-theme="dark"] .text-brand-800 {
-  color: var(--color-brand-200);
+  color: #d3d9a8;
 }
 
 html[data-theme="dark"] .bg-brand-700.text-white {
@@ -152,8 +156,12 @@ html[data-theme="dark"] .bg-brand-700.text-white {
     color: var(--color-brand-300);
   }
 
+  html:not([data-theme]) .text-brand-600 {
+    color: var(--color-brand-400);
+  }
+
   html:not([data-theme]) .text-brand-800 {
-    color: var(--color-brand-200);
+    color: #d3d9a8;
   }
 
   html:not([data-theme]) .bg-brand-700.text-white {
