@@ -30,7 +30,7 @@ export function PeriodFilter({
     ["Últimos 6 meses", presets.last6],
     ["Últimos 3 meses", presets.last3],
   ];
-  const selectClass = "border-line h-10 rounded-xl border bg-white px-3 text-sm";
+  const selectClass = "border-line bg-surface h-10 rounded-xl border px-3 text-sm";
 
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -42,7 +42,7 @@ export function PeriodFilter({
             aria-current={isActive(r) ? "true" : undefined}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap",
-              isActive(r) ? "bg-brand-600 text-white" : "border-line text-ink-soft hover:bg-canvas border bg-white",
+              isActive(r) ? "bg-brand-600 text-white" : "border-line bg-surface text-ink-soft hover:bg-canvas border",
             )}
           >
             {label}

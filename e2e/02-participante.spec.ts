@@ -32,4 +32,23 @@ test.describe("participante", () => {
 
     await signOut(page);
   });
+
+  test("alterna o tema e acessa todo o menu no celular", async ({ page }) => {
+    const { participant, password } = credentials();
+    await signIn(page, participant, password);
+
+    await page.getByRole("button", { name: "Ativar tema escuro" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.getByRole("button", { name: "Ativar tema claro" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Mais" }).click();
+    await expect(page.getByRole("dialog", { name: "Menu completo" })).toBeVisible();
+    await page.getByRole("link", { name: "Regras" }).click();
+    await expect(page).toHaveURL(/\/minha-caixinha\/regras$/);
+
+    await signOut(page);
+  });
 });

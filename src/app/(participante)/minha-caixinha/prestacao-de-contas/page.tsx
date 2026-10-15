@@ -59,7 +59,7 @@ export default async function CollectiveReportPage({ searchParams }: PageProps<"
                   href={`?ciclo=${c.id}`}
                   className={cn(
                     "rounded-full px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap",
-                    c.id === report.cycle.id ? "bg-brand-600 text-white" : "border-line border bg-white",
+                    c.id === report.cycle.id ? "bg-brand-600 text-white" : "border-line bg-surface border",
                   )}
                 >
                   {c.name}
@@ -112,7 +112,7 @@ export default async function CollectiveReportPage({ searchParams }: PageProps<"
             title="Entradas e saídas do caixa"
             description="Movimento mensal do grupo (contribuições, receitas, despesas e tributos)."
             legend={[
-              { label: "Entradas", color: "#039855", shape: "bar" },
+              { label: "Entradas", color: "#60702f", shape: "bar" },
               { label: "Saídas", color: "#4a3aa7", shape: "bar" },
             ]}
             table={{

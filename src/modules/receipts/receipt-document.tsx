@@ -16,7 +16,7 @@ export type ReceiptView = {
   issuedAt: string;
 };
 
-const GREEN = "#039855";
+const GREEN = "#60702f";
 const INK = "#0f1a16";
 const MUTED = "#66746e";
 const LINE = "#e3e9e6";
@@ -53,10 +53,10 @@ function Logo() {
   return (
     <Svg width={36} height={36} viewBox="0 0 48 48">
       <Rect width={48} height={48} rx={12} fill={GREEN} />
-      <Circle cx={19.5} cy={12} r={5} fill="#a6f4c5" />
+      <Circle cx={19.5} cy={12} r={5} fill="#d3d9a8" />
       <Circle cx={28.5} cy={12} r={5} fill="#ffffff" stroke={GREEN} strokeWidth={1.5} />
       <Rect x={8.5} y={19} width={31} height={6} rx={2.5} fill="#ffffff" />
-      <Rect x={18} y={21} width={12} height={2} rx={1} fill="#027a48" />
+      <Rect x={18} y={21} width={12} height={2} rx={1} fill="#4d5a27" />
       <Path d="M11 26h26v9.5a3.5 3.5 0 0 1-3.5 3.5h-19A3.5 3.5 0 0 1 11 35.5z" fill="#ffffff" />
       <Path d="M19 30.5q5 4 10 0" stroke={GREEN} strokeWidth={2.2} fill="none" />
     </Svg>

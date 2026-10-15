@@ -214,7 +214,7 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
                 title="Contribuições por mês"
                 description="Recebido no mês (regime de caixa) comparado ao previsto para a competência."
                 legend={[
-                  { label: "Recebido", color: "#039855", shape: "bar" },
+                  { label: "Recebido", color: "#60702f", shape: "bar" },
                   { label: "Previsto", color: "#8a9692", shape: "line" },
                 ]}
                 table={{
@@ -241,7 +241,7 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
                 title="Entradas e saídas do caixa"
                 description="Entradas acima da linha; saídas (despesas, tributos, estornos) abaixo."
                 legend={[
-                  { label: "Entradas", color: "#039855", shape: "bar" },
+                  { label: "Entradas", color: "#60702f", shape: "bar" },
                   { label: "Saídas", color: "#4a3aa7", shape: "bar" },
                 ]}
                 table={{

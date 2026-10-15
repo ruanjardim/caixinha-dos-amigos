@@ -30,7 +30,7 @@ function Metric({
     <div
       className={cn(
         "rounded-xl border p-3.5",
-        tone === "danger" ? "bg-danger-bg border-red-200" : "border-line bg-white",
+        tone === "danger" ? "bg-danger-bg border-red-200" : "border-line bg-surface",
       )}
     >
       <p

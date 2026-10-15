@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           className="bg-brand-500/40 pointer-events-none absolute -top-24 -right-24 size-96 rounded-full blur-3xl"
           aria-hidden
         />
-        <div className="relative inline-flex self-start rounded-2xl bg-white/95 px-3 py-2">
+        <div className="bg-surface/95 relative inline-flex self-start rounded-2xl px-3 py-2">
           <Logo />
         </div>
         <div className="relative max-w-md space-y-4">

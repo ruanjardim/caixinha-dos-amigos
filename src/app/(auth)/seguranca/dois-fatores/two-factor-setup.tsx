@@ -79,7 +79,7 @@ export function TwoFactorSetup({ homePath }: { homePath: string }) {
         alt="QR Code para o aplicativo autenticador"
         width={200}
         height={200}
-        className="border-line mx-auto rounded-xl border bg-white p-2"
+        className="border-line bg-surface mx-auto rounded-xl border p-2"
       />
       <p className="text-muted text-center text-xs">
         Sem câmera? Digite a chave manualmente:

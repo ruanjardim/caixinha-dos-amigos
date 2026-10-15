@@ -34,7 +34,7 @@ export function PixCode({ copyPaste, qr, simulation }: { copyPaste: string; qr: 
           alt="QR Code do Pix"
           width={220}
           height={220}
-          className={`border-line mx-auto rounded-xl border bg-white p-2 ${simulation ? "opacity-60" : ""}`}
+          className={`border-line bg-surface mx-auto rounded-xl border p-2 ${simulation ? "opacity-60" : ""}`}
         />
       )}
       <label className="block text-xs font-semibold" htmlFor="pix-copia-e-cola">

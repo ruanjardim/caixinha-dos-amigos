@@ -375,7 +375,7 @@ export default async function ActivityPage({ params }: PageProps<"/admin/arrecad
                           "tabular rounded-md border px-1 py-1 text-center text-xs font-semibold",
                           n.status === "CONFIRMED" && "border-brand-600 bg-brand-600 text-white",
                           n.status === "RESERVED" && "bg-warning-bg text-warning border-amber-300",
-                          n.status === "AVAILABLE" && "border-line text-ink-soft bg-white",
+                          n.status === "AVAILABLE" && "border-line bg-surface text-ink-soft",
                         )}
                       >
                         {formatRaffleNumber(n.number, end)}

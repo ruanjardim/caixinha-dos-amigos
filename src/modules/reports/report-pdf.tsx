@@ -2,7 +2,7 @@ import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { formatCell, pdfText } from "./format";
 import type { ReportDoc, ReportSection } from "./types";
 
-const GREEN = "#039855";
+const GREEN = "#60702f";
 const INK = "#0f1a16";
 const MUTED = "#66746e";
 const LINE = "#e3e9e6";

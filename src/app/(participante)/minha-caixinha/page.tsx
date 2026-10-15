@@ -35,7 +35,7 @@ export default async function MyCaixinhaPage({ searchParams }: PageProps<"/minha
       {recent && (
         <Link
           href="/minha-caixinha/comunicados"
-          className="border-line hover:bg-canvas flex items-start gap-3 rounded-xl border bg-white p-3.5 text-sm"
+          className="border-line bg-surface hover:bg-canvas flex items-start gap-3 rounded-xl border p-3.5 text-sm"
         >
           <Megaphone className="text-brand-600 mt-0.5 size-4 shrink-0" aria-hidden />
           <span className="min-w-0">

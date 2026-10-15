@@ -80,7 +80,7 @@ export default async function AdminAnnouncementsPage() {
                 <div className="flex gap-2">
                   <Link
                     href={`/admin/comunicados/${a.id}`}
-                    className="border-line hover:bg-canvas inline-flex h-9 items-center gap-1.5 rounded-xl border bg-white px-3 text-sm font-semibold"
+                    className="border-line bg-surface hover:bg-canvas inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold"
                   >
                     <Pencil className="size-4" aria-hidden /> Editar
                   </Link>

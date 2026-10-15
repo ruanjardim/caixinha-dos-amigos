@@ -53,7 +53,7 @@ export default async function PaymentsPage({ searchParams }: PageProps<"/admin/p
               "rounded-full px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap",
               status === t.value
                 ? "bg-brand-600 text-white"
-                : "border-line text-ink-soft hover:bg-canvas border bg-white",
+                : "border-line bg-surface text-ink-soft hover:bg-canvas border",
             )}
           >
             {t.label}
@@ -71,7 +71,7 @@ export default async function PaymentsPage({ searchParams }: PageProps<"/admin/p
           defaultValue={q}
           placeholder="Buscar por participante ou referência"
           aria-label="Buscar pagamentos"
-          className="border-line focus:border-brand-500 focus:ring-brand-100 h-11 flex-1 rounded-xl border bg-white px-3.5 focus:ring-4 focus:outline-none"
+          className="border-line bg-surface focus:border-brand-500 focus:ring-brand-100 h-11 flex-1 rounded-xl border px-3.5 focus:ring-4 focus:outline-none"
         />
         <button type="submit" className="bg-ink h-11 rounded-xl px-4 font-semibold text-white">
           Buscar

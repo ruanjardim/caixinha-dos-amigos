@@ -25,7 +25,7 @@ import {
 import { formatBRL } from "@/domain/money";
 
 const C = {
-  in: "#039855",
+  in: "#60702f",
   out: "#4a3aa7",
   context: "#8a9692",
   grid: "#e3e9e6",
@@ -58,7 +58,7 @@ type SeriesDef = { key: string; name: string; color: string; kind: "bar" | "line
 function ChartTooltip({ active, payload, label, series }: TooltipContentProps & { series: SeriesDef[] }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="border-line rounded-xl border bg-white px-3 py-2 text-sm shadow-[var(--shadow-card)]">
+    <div className="border-line bg-surface rounded-xl border px-3 py-2 text-sm shadow-[var(--shadow-card)]">
       <p className="text-muted mb-1 text-xs font-semibold">{label}</p>
       <ul className="space-y-0.5">
         {series.map((s) => {

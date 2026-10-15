@@ -44,14 +44,14 @@ export default async function ParticipantsPage({ searchParams }: PageProps<"/adm
             name="q"
             defaultValue={q}
             placeholder="Buscar por nome, e-mail ou telefone"
-            className="border-line focus:border-brand-500 focus:ring-brand-100 h-11 w-full rounded-xl border bg-white pr-3 pl-9 focus:ring-4 focus:outline-none"
+            className="border-line bg-surface focus:border-brand-500 focus:ring-brand-100 h-11 w-full rounded-xl border pr-3 pl-9 focus:ring-4 focus:outline-none"
           />
         </label>
         <select
           name="status"
           defaultValue={status}
           aria-label="Situação"
-          className="border-line h-11 rounded-xl border bg-white px-3"
+          className="border-line bg-surface h-11 rounded-xl border px-3"
         >
           {STATUS_FILTERS.map((f) => (
             <option key={f.value} value={f.value}>

@@ -2,33 +2,33 @@
 
 /*
  * Identidade visual — Caixinha dos Amigos
- * Tema claro, verde como destaque, branco e tons suaves.
+ * Verde-oliva como destaque, contraste AA e temas claro/escuro.
  */
 @theme {
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
-  /* Verde da marca */
-  --color-brand-50: #ecfdf3;
-  --color-brand-100: #d1fadf;
-  --color-brand-200: #a6f4c5;
-  --color-brand-300: #6ce9a6;
-  --color-brand-400: #32d583;
-  --color-brand-500: #12b76a;
-  --color-brand-600: #039855;
-  --color-brand-700: #027a48;
-  --color-brand-800: #05603a;
-  --color-brand-900: #054f31;
+  /* Verde-oliva da marca */
+  --color-brand-50: #f6f7ec;
+  --color-brand-100: #e9ecd2;
+  --color-brand-200: #d3d9a8;
+  --color-brand-300: #b5c079;
+  --color-brand-400: #96a652;
+  --color-brand-500: #788a3c;
+  --color-brand-600: #60702f;
+  --color-brand-700: #4d5a27;
+  --color-brand-800: #414b24;
+  --color-brand-900: #373f21;
 
   /* Neutros levemente esverdeados */
-  --color-canvas: #f6f8f7;
+  --color-canvas: #f7f7f2;
   --color-surface: #ffffff;
-  --color-line: #e3e9e6;
-  --color-ink: #0f1a16;
-  --color-ink-soft: #3d4a45;
-  --color-muted: #66746e;
+  --color-line: #dfe2d6;
+  --color-ink: #171b12;
+  --color-ink-soft: #3f4636;
+  --color-muted: #68705f;
 
   /* Semântica dos valores financeiros */
-  --color-received: #039855; /* dinheiro efetivamente recebido */
+  --color-received: #5a7128; /* dinheiro efetivamente recebido */
   --color-calculated: #0e7090; /* resultado já apurado */
   --color-projection: #8a9692; /* projeção não garantida */
 
@@ -40,10 +40,10 @@
   --color-info-bg: #eff8ff;
 
   /* Gráficos (paleta validada: CVD, contraste e brilho — ver docs/arquitetura.md) */
-  --color-chart-in: #039855; /* recebido / entradas */
+  --color-chart-in: #60702f; /* recebido / entradas */
   --color-chart-out: #4a3aa7; /* saídas */
   --color-chart-context: #8a9692; /* previsto (contexto) */
-  --color-chart-grid: #e3e9e6;
+  --color-chart-grid: #dfe2d6;
   --color-chart-axis: #c3c2b7;
   --color-status-good: #0ca30c;
   --color-status-critical: #d03b3b;
@@ -56,6 +56,111 @@
   color-scheme: light;
 }
 
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-brand-50: #22291a;
+  --color-brand-100: #2c351f;
+  --color-brand-200: #3c4828;
+  --color-brand-300: #bdca8d;
+  --color-brand-400: #a4b66c;
+  --color-brand-500: #8da153;
+
+  --color-canvas: #151811;
+  --color-surface: #20251a;
+  --color-line: #3d4433;
+  --color-ink: #f5f6ef;
+  --color-ink-soft: #d7dccd;
+  --color-muted: #b7beaa;
+
+  --color-received: #a9c96a;
+  --color-calculated: #70c8e6;
+  --color-projection: #bdc3b8;
+
+  --color-warning: #f5ca72;
+  --color-warning-bg: #372a14;
+  --color-danger: #ffaaa2;
+  --color-danger-bg: #381d1b;
+  --color-info: #a9caff;
+  --color-info-bg: #192b43;
+
+  --color-chart-in: #a9c96a;
+  --color-chart-out: #b6a8ff;
+  --color-chart-context: #bdc3b8;
+  --color-chart-grid: #3d4433;
+  --color-chart-axis: #68705f;
+  --color-status-good: #8fce72;
+  --color-status-critical: #ff9189;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.28), 0 8px 24px rgb(0 0 0 / 0.16);
+}
+
+/* Tons claros para texto oliva no fundo escuro; seleções continuam brancas. */
+html[data-theme="dark"] .text-brand-700 {
+  color: var(--color-brand-300);
+}
+
+html[data-theme="dark"] .text-brand-800 {
+  color: var(--color-brand-200);
+}
+
+html[data-theme="dark"] .bg-brand-700.text-white {
+  color: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    color-scheme: dark;
+
+    --color-brand-50: #22291a;
+    --color-brand-100: #2c351f;
+    --color-brand-200: #3c4828;
+    --color-brand-300: #bdca8d;
+    --color-brand-400: #a4b66c;
+    --color-brand-500: #8da153;
+
+    --color-canvas: #151811;
+    --color-surface: #20251a;
+    --color-line: #3d4433;
+    --color-ink: #f5f6ef;
+    --color-ink-soft: #d7dccd;
+    --color-muted: #b7beaa;
+
+    --color-received: #a9c96a;
+    --color-calculated: #70c8e6;
+    --color-projection: #bdc3b8;
+
+    --color-warning: #f5ca72;
+    --color-warning-bg: #372a14;
+    --color-danger: #ffaaa2;
+    --color-danger-bg: #381d1b;
+    --color-info: #a9caff;
+    --color-info-bg: #192b43;
+
+    --color-chart-in: #a9c96a;
+    --color-chart-out: #b6a8ff;
+    --color-chart-context: #bdc3b8;
+    --color-chart-grid: #3d4433;
+    --color-chart-axis: #68705f;
+    --color-status-good: #8fce72;
+    --color-status-critical: #ff9189;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.28), 0 8px 24px rgb(0 0 0 / 0.16);
+  }
+
+  html:not([data-theme]) .text-brand-700 {
+    color: var(--color-brand-300);
+  }
+
+  html:not([data-theme]) .text-brand-800 {
+    color: var(--color-brand-200);
+  }
+
+  html:not([data-theme]) .bg-brand-700.text-white {
+    color: #ffffff;
+  }
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -65,6 +170,13 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-feature-settings: "tnum" 0;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
 }
 
 /* Números financeiros sempre com dígitos tabulares (alinhados). */

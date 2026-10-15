@@ -12,7 +12,7 @@ import { useFieldError } from "@/components/forms/action-form";
 import { cn } from "@/lib/cn";
 
 const controlClass = cn(
-  "border-line text-ink placeholder:text-muted/70 w-full rounded-xl border bg-white px-3.5 text-[0.95rem]",
+  "border-line bg-surface text-ink placeholder:text-muted/70 w-full rounded-xl border px-3.5 text-[0.95rem]",
   "focus:border-brand-500 focus:ring-brand-100 focus:ring-4 focus:outline-none",
   "disabled:bg-canvas disabled:text-muted",
 );

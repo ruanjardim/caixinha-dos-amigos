@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#039855",
+  themeColor: "#60702f",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -30,7 +30,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Renderização sempre dinâmica: cada resposta recebe o nonce da CSP (ver src/proxy.ts).
   await connection();
   return (
-    <html lang="pt-BR" className={`${jakarta.variable} h-full antialiased`}>
+    <html lang="pt-BR" className={`${jakarta.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
         {children}
         <ServiceWorkerRegister />

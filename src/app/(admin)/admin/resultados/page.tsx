@@ -59,7 +59,7 @@ export default async function ResultsPage({ searchParams }: PageProps<"/admin/re
               href={`/admin/resultados?ciclo=${c.id}`}
               className={cn(
                 "rounded-full px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap",
-                c.id === cycleId ? "bg-brand-600 text-white" : "border-line border bg-white",
+                c.id === cycleId ? "bg-brand-600 text-white" : "border-line bg-surface border",
               )}
             >
               {c.name}
