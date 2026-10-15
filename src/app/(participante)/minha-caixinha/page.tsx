@@ -110,20 +110,20 @@ function CurrentMembership({ m, result }: { m: OwnMembership; result: Awaited<Re
       <Card className="bg-brand-700 overflow-hidden border-0 text-white">
         <CardContent className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="space-y-1">
-            <p className="text-brand-100 text-sm">
+            <p className="text-sm text-white/85">
               {m.quotaCount} cota(s) de {formatBRL(m.quotaValueCents)} · mensalidade{" "}
               <strong className="text-white">{formatBRL(m.quotaCount * m.quotaValueCents)}</strong>
             </p>
-            <p className="text-brand-100 text-sm">Total recebido (confirmado)</p>
+            <p className="text-sm text-white/85">Total recebido (confirmado)</p>
             <p className="tabular text-3xl font-extrabold">{formatBRL(m.summary.receivedCents)}</p>
             {next ? (
-              <p className="text-brand-100 flex items-center gap-1.5 text-sm">
+              <p className="flex items-center gap-1.5 text-sm text-white/85">
                 <CalendarClock className="size-4" aria-hidden />
                 Próximo vencimento: {formatDateBR(next.dueDate)} ({formatCompetence(next.competence)}) —{" "}
                 {formatBRL(next.remainingCents)}
               </p>
             ) : !isDraft ? (
-              <p className="text-brand-100 text-sm">Todas as parcelas do ciclo estão cobertas. 🎉</p>
+              <p className="text-sm text-white/85">Todas as parcelas do ciclo estão cobertas. 🎉</p>
             ) : null}
           </div>
           {canPay && (

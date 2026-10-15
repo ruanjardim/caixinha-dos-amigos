@@ -14,12 +14,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
         <div className="relative max-w-md space-y-4">
           <h1 className="text-4xl leading-tight font-extrabold">Nossa caixinha, com transparência de ponta a ponta.</h1>
-          <p className="text-brand-100 text-lg">
+          <p className="text-lg text-white/85">
             Cada contribuição registrada, cada real explicado. Organização para quem administra, clareza para quem
             participa.
           </p>
         </div>
-        <p className="text-brand-100 relative flex items-center gap-2 text-sm">
+        <p className="relative flex items-center gap-2 text-sm text-white/85">
           <ShieldCheck className="size-4" aria-hidden />
           Grupo privado · acesso somente por convite
         </p>
