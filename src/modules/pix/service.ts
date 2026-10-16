@@ -45,8 +45,11 @@ export async function createCharge(
   now: Date = new Date(),
 ) {
   return db.$transaction(async (tx) => {
-    const membership = await tx.membership.findUnique({
-      where: { id: input.membershipId },
+    const membership = await tx.membership.findFirst({
+      where: {
+        id: input.membershipId,
+        ...(actor.caixinhaId ? { cycle: { caixinhaId: actor.caixinhaId } } : {}),
+      },
       include: { cycle: { select: { status: true, name: true } } },
     });
     if (!membership) throw new DomainError("Participação não encontrada.");
@@ -93,6 +96,14 @@ export async function createCharge(
 
 export async function cancelCharge(actor: CurrentUser, input: { chargeId: string; reason: string }) {
   await db.$transaction(async (tx) => {
+    const charge = await tx.pixCharge.findFirst({
+      where: {
+        id: input.chargeId,
+        ...(actor.caixinhaId ? { membership: { cycle: { caixinhaId: actor.caixinhaId } } } : {}),
+      },
+      select: { id: true },
+    });
+    if (!charge) throw new DomainError("Cobrança não encontrada.");
     const changed = await tx.pixCharge.updateMany({
       where: { id: input.chargeId, status: { in: ["CREATED", "ACTIVE"] } },
       data: { status: "CANCELLED" },
@@ -468,8 +479,11 @@ export async function simulatePixEvent(
   now: Date = new Date(),
   secret: string = env.PIX_WEBHOOK_SECRET,
 ): Promise<WebhookResult> {
-  const charge = await db.pixCharge.findUnique({
-    where: { id: input.chargeId },
+  const charge = await db.pixCharge.findFirst({
+    where: {
+      id: input.chargeId,
+      ...(actor.caixinhaId ? { membership: { cycle: { caixinhaId: actor.caixinhaId } } } : {}),
+    },
     include: { payment: { select: { amountCents: true } } },
   });
   if (!charge) throw new DomainError("Cobrança não encontrada.");

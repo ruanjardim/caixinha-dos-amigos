@@ -14,10 +14,10 @@ import { registerPaymentAction } from "@/modules/payments/actions";
 export const metadata = { title: "Registrar pagamento" };
 
 export default async function NewPaymentPage({ searchParams }: PageProps<"/admin/pagamentos/novo">) {
-  await requirePagePermission("payments.register");
+  const user = await requirePagePermission("payments.register");
   const params = await searchParams;
   const preselected = typeof params.participacao === "string" ? params.participacao : "";
-  const memberships = await listPayableMemberships();
+  const memberships = await listPayableMemberships(user.caixinhaId);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

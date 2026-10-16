@@ -26,6 +26,7 @@ export async function createParticipant(actor: CurrentUser, input: ParticipantIn
           email: input.email,
           phone: input.phone,
           joinedAt: fromISODate(input.joinedAt),
+          caixinhaId: actor.caixinhaId ?? null,
         },
       });
       await recordAudit(
@@ -49,7 +50,9 @@ export async function createParticipant(actor: CurrentUser, input: ParticipantIn
 export async function updateParticipant(actor: CurrentUser, id: string, input: ParticipantInput) {
   try {
     return await db.$transaction(async (tx) => {
-      const before = await tx.participant.findUnique({ where: { id } });
+      const before = await tx.participant.findFirst({
+        where: { id, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+      });
       if (!before) throw new DomainError("Participante não encontrado.");
       if (before.anonymizedAt) throw new DomainError(ANONYMIZED);
 
@@ -95,7 +98,9 @@ export async function setParticipantStatus(
   reason: string,
 ) {
   return db.$transaction(async (tx) => {
-    const before = await tx.participant.findUnique({ where: { id } });
+    const before = await tx.participant.findFirst({
+      where: { id, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    });
     if (!before) throw new DomainError("Participante não encontrado.");
     if (before.anonymizedAt) throw new DomainError(ANONYMIZED);
     if (before.status === status) return before;
@@ -126,7 +131,10 @@ export async function setParticipantStatus(
  * o link para ele definir a própria senha. Ninguém mais conhece a senha.
  */
 export async function grantAccess(actor: CurrentUser, participantId: string) {
-  const participant = await db.participant.findUnique({ where: { id: participantId }, include: { user: true } });
+  const participant = await db.participant.findFirst({
+    where: { id: participantId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    include: { user: true },
+  });
   if (!participant) throw new DomainError("Participante não encontrado.");
   if (participant.anonymizedAt) throw new DomainError(ANONYMIZED);
   if (participant.status !== "ACTIVE") throw new DomainError("Ative o cadastro antes de liberar o acesso.");
@@ -136,6 +144,13 @@ export async function grantAccess(actor: CurrentUser, participantId: string) {
       if (participant.user.status !== "ACTIVE") {
         await tx.user.update({ where: { id: participant.user.id }, data: { status: "ACTIVE" } });
       }
+      if (actor.caixinhaId) {
+        await tx.caixinhaMember.upsert({
+          where: { caixinhaId_userId: { caixinhaId: actor.caixinhaId, userId: participant.user.id } },
+          create: { caixinhaId: actor.caixinhaId, userId: participant.user.id, role: "PARTICIPANT" },
+          update: { role: "PARTICIPANT" },
+        });
+      }
     } else {
       const existing = await tx.user.findUnique({ where: { email: participant.email } });
       if (existing) {
@@ -143,6 +158,13 @@ export async function grantAccess(actor: CurrentUser, participantId: string) {
         const linked = await tx.participant.findFirst({ where: { userId: existing.id } });
         if (linked) throw new DomainError("Este e-mail já está vinculado a outro participante.");
         await tx.participant.update({ where: { id: participantId }, data: { userId: existing.id } });
+        if (actor.caixinhaId) {
+          await tx.caixinhaMember.upsert({
+            where: { caixinhaId_userId: { caixinhaId: actor.caixinhaId, userId: existing.id } },
+            create: { caixinhaId: actor.caixinhaId, userId: existing.id, role: "PARTICIPANT" },
+            update: { role: "PARTICIPANT" },
+          });
+        }
       } else {
         const userId = randomUUID();
         await tx.user.create({
@@ -163,6 +185,11 @@ export async function grantAccess(actor: CurrentUser, participantId: string) {
           },
         });
         await tx.participant.update({ where: { id: participantId }, data: { userId } });
+        if (actor.caixinhaId) {
+          await tx.caixinhaMember.create({
+            data: { caixinhaId: actor.caixinhaId, userId, role: "PARTICIPANT" },
+          });
+        }
       }
     }
     await recordAudit(
@@ -178,7 +205,9 @@ export async function grantAccess(actor: CurrentUser, participantId: string) {
 
 export async function suspendAccess(actor: CurrentUser, participantId: string, reason: string) {
   await db.$transaction(async (tx) => {
-    const participant = await tx.participant.findUnique({ where: { id: participantId } });
+    const participant = await tx.participant.findFirst({
+      where: { id: participantId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    });
     if (!participant?.userId) throw new DomainError("Este participante não tem acesso ao sistema.");
     if (participant.userId === actor.userId) throw new DomainError("Você não pode suspender o próprio acesso.");
     await tx.user.update({ where: { id: participant.userId }, data: { status: "SUSPENDED" } });
@@ -218,8 +247,8 @@ export async function updateOwnProfile(actor: CurrentUser, input: { phone: strin
   });
 }
 
-export async function listParticipants(filter: { q?: string; status?: string }) {
-  const where: Prisma.ParticipantWhereInput = {};
+export async function listParticipants(filter: { q?: string; status?: string }, caixinhaId?: string | null) {
+  const where: Prisma.ParticipantWhereInput = caixinhaId ? { caixinhaId } : {};
   if (filter.q) {
     const q = filter.q.trim();
     const digits = q.replace(/\D/g, "");
@@ -246,9 +275,9 @@ export async function listParticipants(filter: { q?: string; status?: string }) 
   });
 }
 
-export async function getParticipant(id: string) {
-  return db.participant.findUnique({
-    where: { id },
+export async function getParticipant(id: string, caixinhaId?: string | null) {
+  return db.participant.findFirst({
+    where: { id, ...(caixinhaId ? { caixinhaId } : {}) },
     include: {
       user: { select: { id: true, status: true, role: true, email: true } },
       memberships: {

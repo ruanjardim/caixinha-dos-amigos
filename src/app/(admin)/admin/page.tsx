@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   AlertTriangle,
   CalendarClock,
@@ -48,17 +49,22 @@ function shortMonth(c: Competence) {
 
 export default async function AdminDashboard({ searchParams }: PageProps<"/admin">) {
   const user = await requirePagePermission("dashboard.admin");
+  if (!user.caixinhaId) redirect("/admin/caixinhas/nova");
   const params = await searchParams;
   const str = (v: unknown) => (typeof v === "string" ? v : undefined);
 
   const [cycles, flags, underReview] = await Promise.all([
-    listDashboardCycles(),
+    listDashboardCycles(user.caixinhaId),
     db.featureFlag.findMany({ orderBy: { key: "asc" } }),
-    db.payment.count({ where: { status: "UNDER_REVIEW" } }),
+    db.payment.count({
+      where: { status: "UNDER_REVIEW", membership: { cycle: { caixinhaId: user.caixinhaId } } },
+    }),
   ]);
   const requested = str(params.ciclo);
   const cycleId = cycles.some((c) => c.id === requested) ? requested! : defaultCycleId(cycles);
-  const d = cycleId ? await getAdminDashboard(cycleId, { from: str(params.de), to: str(params.ate) }) : null;
+  const d = cycleId
+    ? await getAdminDashboard(cycleId, { from: str(params.de), to: str(params.ate) }, undefined, user.caixinhaId)
+    : null;
 
   return (
     <div className="space-y-8">

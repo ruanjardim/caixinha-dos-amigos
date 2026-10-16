@@ -23,8 +23,9 @@ export function summarize(
 
 const paymentSummaryFields = { id: true, amountCents: true, status: true } as const;
 
-export async function listCycles() {
+export async function listCycles(caixinhaId?: string | null) {
   return db.cycle.findMany({
+    where: caixinhaId ? { caixinhaId } : undefined,
     orderBy: { startDate: "desc" },
     include: {
       rules: { orderBy: { version: "desc" }, take: 1 },
@@ -34,9 +35,14 @@ export async function listCycles() {
 }
 
 /** Ciclos que aceitam pagamentos (para formulários). */
-export async function listPayableMemberships() {
+export async function listPayableMemberships(caixinhaId?: string | null) {
   return db.membership.findMany({
-    where: { cycle: { status: { in: ["OPEN", "CONTRIBUTIONS_CLOSED"] } } },
+    where: {
+      cycle: {
+        ...(caixinhaId ? { caixinhaId } : {}),
+        status: { in: ["OPEN", "CONTRIBUTIONS_CLOSED"] },
+      },
+    },
     orderBy: [{ cycle: { startDate: "desc" } }, { participant: { fullName: "asc" } }],
     include: {
       participant: { select: { fullName: true } },
@@ -45,9 +51,9 @@ export async function listPayableMemberships() {
   });
 }
 
-export async function getCycleDetail(cycleId: string, today: ISODate = todayInBrazil()) {
-  const cycle = await db.cycle.findUnique({
-    where: { id: cycleId },
+export async function getCycleDetail(cycleId: string, today: ISODate = todayInBrazil(), caixinhaId?: string | null) {
+  const cycle = await db.cycle.findFirst({
+    where: { id: cycleId, ...(caixinhaId ? { caixinhaId } : {}) },
     include: {
       rules: { orderBy: { version: "desc" }, take: 1, include: { acceptances: { select: { participantId: true } } } },
       memberships: {
@@ -99,9 +105,13 @@ export async function getCycleDetail(cycleId: string, today: ISODate = todayInBr
   return { cycle, rules, memberships, totals, today };
 }
 
-export async function getMembershipDetail(membershipId: string, today: ISODate = todayInBrazil()) {
-  const m = await db.membership.findUnique({
-    where: { id: membershipId },
+export async function getMembershipDetail(
+  membershipId: string,
+  today: ISODate = todayInBrazil(),
+  caixinhaId?: string | null,
+) {
+  const m = await db.membership.findFirst({
+    where: { id: membershipId, ...(caixinhaId ? { cycle: { caixinhaId } } : {}) },
     include: {
       participant: true,
       cycle: { include: { rules: { orderBy: { version: "desc" }, take: 1 } } },

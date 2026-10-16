@@ -30,14 +30,36 @@ async function main() {
       password,
     });
 
+    const caixinha = await db.caixinha.upsert({
+      where: { slug: "caixinha-dos-amigos" },
+      update: {},
+      create: {
+        name: "Caixinha dos Amigos",
+        slug: "caixinha-dos-amigos",
+        description: "Grupo fictício de demonstração.",
+        ownerId: admin.id,
+      },
+    });
+    await db.caixinhaMember.upsert({
+      where: { caixinhaId_userId: { caixinhaId: caixinha.id, userId: admin.id } },
+      update: { role: "OWNER" },
+      create: { caixinhaId: caixinha.id, userId: admin.id, role: "OWNER" },
+    });
+    await db.caixinhaMember.upsert({
+      where: { caixinhaId_userId: { caixinhaId: caixinha.id, userId: joao.id } },
+      update: { role: "PARTICIPANT" },
+      create: { caixinhaId: caixinha.id, userId: joao.id, role: "PARTICIPANT" },
+    });
+
     await db.participant.upsert({
       where: { email: "joao@caixinha.local" },
-      update: {},
+      update: { caixinhaId: caixinha.id },
       create: {
         fullName: "João Exemplo",
         email: "joao@caixinha.local",
         joinedAt: new Date("2026-12-01"),
         userId: joao.id,
+        caixinhaId: caixinha.id,
       },
     });
 

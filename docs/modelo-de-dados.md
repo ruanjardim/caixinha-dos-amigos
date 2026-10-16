@@ -9,6 +9,8 @@ Fonte da verdade: [`prisma/schema.prisma`](../prisma/schema.prisma). Valores mon
 | Tabela         | Descrição                                                                                 |
 | -------------- | ----------------------------------------------------------------------------------------- |
 | `user`         | Usuário do sistema: nome, e-mail, `role` (ADMIN/PARTICIPANT), `status` (ACTIVE/SUSPENDED) |
+| `caixinha`     | Grupo isolado, com nome, responsável, descrição e situação                               |
+| `caixinha_member` | Acesso do usuário à caixinha como responsável, administrador ou participante          |
 | `session`      | Sessões ativas (revogáveis)                                                               |
 | `account`      | Credencial (hash argon2id da senha)                                                       |
 | `verification` | Tokens de redefinição de senha                                                            |
@@ -19,10 +21,10 @@ Fonte da verdade: [`prisma/schema.prisma`](../prisma/schema.prisma). Valores mon
 
 | Tabela              | Descrição                                                                                                                                        |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cycle`             | Ciclo anual: datas, dia de vencimento, status (DRAFT → OPEN → CONTRIBUTIONS_CLOSED → SETTLING → CLOSED)                                          |
+| `cycle`             | Ciclo anual vinculado a uma caixinha: datas, dia de vencimento, status (DRAFT → OPEN → CONTRIBUTIONS_CLOSED → SETTLING → CLOSED)                    |
 | `cycle_rules`       | Versão das regras: % administrativo (em pontos-base), método de distribuição, valores de cota, texto integral, hash. **Imutável após congelar.** |
 | `rules_acceptance`  | Aceite de cada participante a uma versão de regras                                                                                               |
-| `participant`       | Cadastro mínimo (LGPD): nome, e-mail, telefone, data de entrada, status                                                                          |
+| `participant`       | Cadastro mínimo e isolado por caixinha (LGPD): nome, e-mail, telefone, data de entrada, status                                                     |
 | `membership`        | Participante × ciclo: quantidade e valor da cota                                                                                                 |
 | `membership_change` | Histórico de mudança de cotas                                                                                                                    |
 | `installment`       | **Parcela prevista** (obrigação). Não é dinheiro. Cancelada (nunca apagada) quando deixa de ser devida.                                          |

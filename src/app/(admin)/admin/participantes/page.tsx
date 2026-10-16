@@ -18,11 +18,11 @@ const STATUS_FILTERS = [
 ];
 
 export default async function ParticipantsPage({ searchParams }: PageProps<"/admin/participantes">) {
-  await requirePagePermission("participants.manage");
+  const user = await requirePagePermission("participants.manage");
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.slice(0, 100) : "";
   const status = typeof params.status === "string" ? params.status : "";
-  const participants = await listParticipants({ q, status });
+  const participants = await listParticipants({ q, status }, user.caixinhaId);
 
   return (
     <div className="space-y-6">

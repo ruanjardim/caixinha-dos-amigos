@@ -29,10 +29,13 @@ import { getResultsOverview } from "@/modules/results/queries";
 export const metadata = { title: "Resultados" };
 
 export default async function ResultsPage({ searchParams }: PageProps<"/admin/resultados">) {
-  await requirePagePermission("results.calculate");
+  const user = await requirePagePermission("results.calculate");
   const params = await searchParams;
   const cycles = await db.cycle.findMany({
-    where: { status: { in: ["OPEN", "CONTRIBUTIONS_CLOSED", "SETTLING", "CLOSED"] } },
+    where: {
+      status: { in: ["OPEN", "CONTRIBUTIONS_CLOSED", "SETTLING", "CLOSED"] },
+      ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}),
+    },
     orderBy: { startDate: "desc" },
     select: { id: true, name: true, status: true },
   });

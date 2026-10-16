@@ -15,10 +15,14 @@ import { listNotificationLog, NOTIFICATION_KIND_LABEL } from "@/modules/notifica
 export const metadata = { title: "Comunicados" };
 
 export default async function AdminAnnouncementsPage() {
-  await requirePagePermission("announcements.manage");
+  const user = await requirePagePermission("announcements.manage");
   const [items, cycles, log] = await Promise.all([
-    listAnnouncementsForAdmin(),
-    db.cycle.findMany({ orderBy: { startDate: "desc" }, select: { id: true, name: true } }),
+    listAnnouncementsForAdmin(user.caixinhaId),
+    db.cycle.findMany({
+      where: user.caixinhaId ? { caixinhaId: user.caixinhaId } : undefined,
+      orderBy: { startDate: "desc" },
+      select: { id: true, name: true },
+    }),
     listNotificationLog(),
   ]);
 

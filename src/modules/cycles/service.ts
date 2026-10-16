@@ -14,9 +14,9 @@ import type { CycleInput } from "./schemas";
 // Auxiliares
 // ---------------------------------------------------------------------------
 
-async function loadCycle(tx: DbTransaction, cycleId: string) {
-  const cycle = await tx.cycle.findUnique({
-    where: { id: cycleId },
+async function loadCycle(tx: DbTransaction, cycleId: string, caixinhaId?: string | null) {
+  const cycle = await tx.cycle.findFirst({
+    where: { id: cycleId, ...(caixinhaId ? { caixinhaId } : {}) },
     include: { rules: { orderBy: { version: "desc" }, take: 1 } },
   });
   if (!cycle) throw new DomainError("Ciclo não encontrado.");
@@ -103,7 +103,7 @@ async function createInstallments(
 
 export async function createCycle(actor: CurrentUser, input: CycleInput) {
   return db.$transaction(async (tx) => {
-    const cycle = await tx.cycle.create({ data: cycleData(input) });
+    const cycle = await tx.cycle.create({ data: { ...cycleData(input), caixinhaId: actor.caixinhaId ?? null } });
     const rules = await tx.cycleRules.create({ data: { cycleId: cycle.id, version: 1, ...rulesData(input) } });
     await recordAudit(
       {
@@ -122,7 +122,7 @@ export async function createCycle(actor: CurrentUser, input: CycleInput) {
 /** Edita datas e regras. Permitido apenas antes da publicação das regras. */
 export async function updateCycle(actor: CurrentUser, cycleId: string, input: CycleInput) {
   return db.$transaction(async (tx) => {
-    const { cycle, rules } = await loadCycle(tx, cycleId);
+    const { cycle, rules } = await loadCycle(tx, cycleId, actor.caixinhaId);
     if (cycle.status !== "DRAFT") throw new DomainError("Somente ciclos em preparação podem ser editados.");
     if (rules?.frozenAt) throw new DomainError("As regras já foram publicadas e estão congeladas.");
 
@@ -160,7 +160,7 @@ export async function updateCycle(actor: CurrentUser, cycleId: string, input: Cy
  */
 export async function publishRules(actor: CurrentUser, cycleId: string) {
   return db.$transaction(async (tx) => {
-    const { cycle, rules } = await loadCycle(tx, cycleId);
+    const { cycle, rules } = await loadCycle(tx, cycleId, actor.caixinhaId);
     if (cycle.status !== "DRAFT") throw new DomainError("Somente ciclos em preparação podem ter regras publicadas.");
     if (!rules) throw new DomainError("Defina as regras do ciclo antes de publicar.");
     if (rules.frozenAt) throw new DomainError("As regras já foram publicadas.");
@@ -186,7 +186,7 @@ export async function publishRules(actor: CurrentUser, cycleId: string) {
 export async function openCycle(actor: CurrentUser, cycleId: string) {
   return db.$transaction(async (tx) => {
     await lockCycle(tx, cycleId);
-    const { cycle, rules } = await loadCycle(tx, cycleId);
+    const { cycle, rules } = await loadCycle(tx, cycleId, actor.caixinhaId);
     if (cycle.status !== "DRAFT") throw new DomainError("Este ciclo já foi aberto.");
     if (!rules?.frozenAt) throw new DomainError("Publique as regras antes de abrir o ciclo.");
 
@@ -214,7 +214,7 @@ export async function openCycle(actor: CurrentUser, cycleId: string) {
 /** Encerra o período de contribuições (após a data prevista). */
 export async function closeContributions(actor: CurrentUser, cycleId: string, today: ISODate = todayInBrazil()) {
   return db.$transaction(async (tx) => {
-    const { cycle } = await loadCycle(tx, cycleId);
+    const { cycle } = await loadCycle(tx, cycleId, actor.caixinhaId);
     if (cycle.status !== "OPEN") throw new DomainError("Somente ciclos abertos podem encerrar contribuições.");
     if (today <= toISODate(cycle.contributionEndDate)) {
       throw new DomainError("As contribuições só podem ser encerradas após a data de fim das contribuições.");
@@ -239,7 +239,7 @@ export async function addMembership(
   try {
     return await db.$transaction(async (tx) => {
       await lockCycle(tx, cycleId);
-      const { cycle, rules } = await loadCycle(tx, cycleId);
+      const { cycle, rules } = await loadCycle(tx, cycleId, actor.caixinhaId);
       if (cycle.status !== "DRAFT" && cycle.status !== "OPEN") {
         throw new DomainError("Não é possível incluir participantes neste ciclo.");
       }
@@ -249,7 +249,9 @@ export async function addMembership(
       if (input.joinedAt > toISODate(cycle.contributionEndDate)) {
         throw new DomainError("A data de entrada é posterior ao fim das contribuições.");
       }
-      const participant = await tx.participant.findUnique({ where: { id: input.participantId } });
+      const participant = await tx.participant.findFirst({
+        where: { id: input.participantId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+      });
       if (!participant || participant.status !== "ACTIVE")
         throw new DomainError("Participante inexistente ou inativo.");
 
@@ -292,7 +294,7 @@ export async function updateDraftMembership(
   return db.$transaction(async (tx) => {
     const m = await tx.membership.findUnique({ where: { id: membershipId } });
     if (!m) throw new DomainError("Participação não encontrada.");
-    const { cycle, rules } = await loadCycle(tx, m.cycleId);
+    const { cycle, rules } = await loadCycle(tx, m.cycleId, actor.caixinhaId);
     if (cycle.status !== "DRAFT")
       throw new DomainError("Com o ciclo aberto, use a alteração de cotas com data de vigência.");
     if (!rules?.quotaValuesCents.includes(input.quotaValueCents)) {
@@ -326,7 +328,7 @@ export async function removeDraftMembership(actor: CurrentUser, membershipId: st
   return db.$transaction(async (tx) => {
     const m = await tx.membership.findUnique({ where: { id: membershipId } });
     if (!m) throw new DomainError("Participação não encontrada.");
-    const { cycle } = await loadCycle(tx, m.cycleId);
+    const { cycle } = await loadCycle(tx, m.cycleId, actor.caixinhaId);
     if (cycle.status !== "DRAFT") throw new DomainError("Com o ciclo aberto, registre a saída do participante.");
     await tx.membership.delete({ where: { id: membershipId } });
     await recordAudit(
@@ -356,7 +358,7 @@ export async function changeQuotas(
     const m = await tx.membership.findUnique({ where: { id: membershipId } });
     if (!m) throw new DomainError("Participação não encontrada.");
     await lockCycle(tx, m.cycleId);
-    const { cycle, rules } = await loadCycle(tx, m.cycleId);
+    const { cycle, rules } = await loadCycle(tx, m.cycleId, actor.caixinhaId);
     if (cycle.status !== "OPEN") throw new DomainError("Alteração de cotas só é possível com o ciclo aberto.");
     if (m.status !== "ACTIVE") throw new DomainError("Participação encerrada.");
     if (!rules?.quotaValuesCents.includes(input.quotaValueCents)) {
@@ -427,7 +429,7 @@ export async function leaveCycle(actor: CurrentUser, membershipId: string, input
   return db.$transaction(async (tx) => {
     const m = await tx.membership.findUnique({ where: { id: membershipId } });
     if (!m) throw new DomainError("Participação não encontrada.");
-    const { cycle } = await loadCycle(tx, m.cycleId);
+    const { cycle } = await loadCycle(tx, m.cycleId, actor.caixinhaId);
     if (cycle.status !== "OPEN") throw new DomainError("Registro de saída só é possível com o ciclo aberto.");
     if (m.status !== "ACTIVE") throw new DomainError("Esta participação já foi encerrada.");
     if (input.leftAt < toISODate(m.joinedAt)) throw new DomainError("A saída não pode ser anterior à entrada.");
@@ -460,7 +462,7 @@ export async function acceptRules(actor: CurrentUser, cycleId: string) {
   if (!actor.participantId) throw new DomainError("Seu acesso não está vinculado a um cadastro de participante.");
   const participantId = actor.participantId;
   return db.$transaction(async (tx) => {
-    const { rules } = await loadCycle(tx, cycleId);
+    const { rules } = await loadCycle(tx, cycleId, actor.caixinhaId);
     if (!rules?.frozenAt) throw new DomainError("As regras deste ciclo ainda não foram publicadas.");
     const membership = await tx.membership.findUnique({ where: { participantId_cycleId: { participantId, cycleId } } });
     if (!membership) throw new DomainError("Você não participa deste ciclo.");

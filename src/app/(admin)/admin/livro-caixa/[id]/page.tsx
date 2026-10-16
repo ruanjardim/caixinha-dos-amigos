@@ -26,10 +26,10 @@ const ACCOUNT_LABEL: Record<string, string> = {
 };
 
 export default async function LedgerEntryPage({ params }: PageProps<"/admin/livro-caixa/[id]">) {
-  await requirePagePermission("ledger.read");
+  const user = await requirePagePermission("ledger.read");
   const { id } = await params;
-  const e = await db.ledgerTransaction.findUnique({
-    where: { id },
+  const e = await db.ledgerTransaction.findFirst({
+    where: { id, ...(user.caixinhaId ? { cycle: { caixinhaId: user.caixinhaId } } : {}) },
     include: {
       lines: true,
       createdBy: { select: { name: true } },

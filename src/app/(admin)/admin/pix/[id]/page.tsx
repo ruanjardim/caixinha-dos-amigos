@@ -59,9 +59,9 @@ const SIMULATIONS: { kind: SimulationKind; label: string; hint: string; when: (s
 ];
 
 export default async function PixChargePage({ params }: PageProps<"/admin/pix/[id]">) {
-  await requirePagePermission("payments.register");
+  const user = await requirePagePermission("payments.register");
   const { id } = await params;
-  const charge = await getChargeDetail(id);
+  const charge = await getChargeDetail(id, new Date(), user.caixinhaId);
   if (!charge) notFound();
   const qr = charge.copyPaste ? await qrDataUrl(charge.copyPaste) : null;
   const canCancel = charge.status === "ACTIVE" || charge.status === "CREATED";

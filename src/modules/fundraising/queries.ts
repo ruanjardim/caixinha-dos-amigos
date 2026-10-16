@@ -19,9 +19,12 @@ export async function activityFinancials(activityIds: string[]) {
   return map;
 }
 
-export async function listActivities(filter: { cycleId?: string } = {}) {
+export async function listActivities(filter: { cycleId?: string; caixinhaId?: string | null } = {}) {
   const activities = await db.fundraisingActivity.findMany({
-    where: filter.cycleId ? { cycleId: filter.cycleId } : {},
+    where: {
+      ...(filter.cycleId ? { cycleId: filter.cycleId } : {}),
+      ...(filter.caixinhaId ? { cycle: { caixinhaId: filter.caixinhaId } } : {}),
+    },
     orderBy: [{ createdAt: "desc" }],
     include: {
       cycle: { select: { name: true } },
@@ -32,9 +35,9 @@ export async function listActivities(filter: { cycleId?: string } = {}) {
   return activities.map((a) => ({ ...a, financials: fin.get(a.id) ?? { revenueCents: 0, costCents: 0 } }));
 }
 
-export async function getActivityDetail(activityId: string) {
-  const a = await db.fundraisingActivity.findUnique({
-    where: { id: activityId },
+export async function getActivityDetail(activityId: string, caixinhaId?: string | null) {
+  const a = await db.fundraisingActivity.findFirst({
+    where: { id: activityId, ...(caixinhaId ? { cycle: { caixinhaId } } : {}) },
     include: {
       cycle: { select: { id: true, name: true, status: true } },
       prizes: { orderBy: { position: "asc" } },

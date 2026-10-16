@@ -75,8 +75,17 @@ export async function deliver(input: NotificationInput, send: Send = sendMail): 
   }
 }
 
-async function activeAdmins() {
-  return db.user.findMany({ where: { role: "ADMIN", status: "ACTIVE" }, select: { id: true, email: true } });
+async function activeAdmins(caixinhaId?: string | null) {
+  return db.user.findMany({
+    where: {
+      role: "ADMIN",
+      status: "ACTIVE",
+      ...(caixinhaId
+        ? { caixinhas: { some: { caixinhaId, role: { in: ["OWNER", "ADMIN"] } } } }
+        : {}),
+    },
+    select: { id: true, email: true },
+  });
 }
 
 function link(path: string) {
@@ -93,7 +102,7 @@ async function loadPayment(paymentId: string) {
     include: {
       membership: {
         include: {
-          cycle: { select: { name: true } },
+          cycle: { select: { name: true, caixinhaId: true } },
           participant: { select: { fullName: true, user: { select: { id: true, email: true } } } },
         },
       },
@@ -106,7 +115,7 @@ export async function notifyPaymentInformed(paymentId: string, send?: Send) {
   const payment = await loadPayment(paymentId);
   if (!payment) return;
   const who = payment.membership.participant.fullName;
-  for (const admin of await activeAdmins()) {
+  for (const admin of await activeAdmins(payment.membership.cycle.caixinhaId)) {
     await deliver(
       {
         userId: admin.id,
@@ -164,11 +173,12 @@ export async function notifyPaymentDecision(paymentId: string, decision: keyof t
 // Comunicados e resultados
 // ---------------------------------------------------------------------------
 
-async function cycleParticipantUsers(cycleId: string | null) {
+async function cycleParticipantUsers(cycleId: string | null, caixinhaId?: string | null) {
   const participants = await db.participant.findMany({
     where: {
       status: "ACTIVE",
       user: { status: "ACTIVE" },
+      ...(caixinhaId ? { caixinhaId } : {}),
       ...(cycleId ? { memberships: { some: { cycleId } } } : {}),
     },
     select: { user: { select: { id: true, email: true } } },
@@ -179,7 +189,7 @@ async function cycleParticipantUsers(cycleId: string | null) {
 export async function notifyAnnouncementPublished(announcementId: string, send?: Send) {
   const a = await db.announcement.findUnique({ where: { id: announcementId } });
   if (!a?.publishedAt) return;
-  for (const user of await cycleParticipantUsers(a.cycleId)) {
+  for (const user of await cycleParticipantUsers(a.cycleId, a.caixinhaId)) {
     await deliver(
       {
         userId: user.id,
@@ -197,10 +207,10 @@ export async function notifyAnnouncementPublished(announcementId: string, send?:
 export async function notifyResultsApproved(calculationId: string, send?: Send) {
   const calc = await db.resultCalculation.findUnique({
     where: { id: calculationId },
-    include: { cycle: { select: { id: true, name: true } } },
+    include: { cycle: { select: { id: true, name: true, caixinhaId: true } } },
   });
   if (!calc || calc.status !== "APPROVED") return;
-  for (const user of await cycleParticipantUsers(calc.cycle.id)) {
+  for (const user of await cycleParticipantUsers(calc.cycle.id, calc.cycle.caixinhaId)) {
     await deliver(
       {
         userId: user.id,

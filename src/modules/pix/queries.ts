@@ -32,10 +32,11 @@ export function pixMode() {
   };
 }
 
-export async function getPixOverview(now: Date = new Date()) {
+export async function getPixOverview(now: Date = new Date(), caixinhaId?: string | null) {
   const since = new Date(now.getTime() - 30 * 86_400_000);
   const [charges, events] = await Promise.all([
     db.pixCharge.findMany({
+      where: caixinhaId ? { membership: { cycle: { caixinhaId } } } : undefined,
       orderBy: { createdAt: "desc" },
       take: 100,
       include: {
@@ -44,6 +45,7 @@ export async function getPixOverview(now: Date = new Date()) {
       },
     }),
     db.webhookEvent.findMany({
+      where: caixinhaId ? { charge: { membership: { cycle: { caixinhaId } } } } : undefined,
       orderBy: { receivedAt: "desc" },
       take: 60,
       include: { charge: { select: { id: true, externalId: true } } },
@@ -61,9 +63,9 @@ export async function getPixOverview(now: Date = new Date()) {
   };
 }
 
-export async function getChargeDetail(id: string, now: Date = new Date()) {
-  const charge = await db.pixCharge.findUnique({
-    where: { id },
+export async function getChargeDetail(id: string, now: Date = new Date(), caixinhaId?: string | null) {
+  const charge = await db.pixCharge.findFirst({
+    where: { id, ...(caixinhaId ? { membership: { cycle: { caixinhaId } } } : {}) },
     include: {
       membership: {
         include: { participant: { select: { id: true, fullName: true } }, cycle: { select: { name: true } } },

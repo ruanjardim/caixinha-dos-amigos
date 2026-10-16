@@ -38,9 +38,9 @@ import { getCycleDetail } from "@/modules/cycles/queries";
 export const metadata = { title: "Ciclo" };
 
 export default async function CyclePage({ params }: PageProps<"/admin/ciclos/[id]">) {
-  await requirePagePermission("cycles.manage");
+  const user = await requirePagePermission("cycles.manage");
   const { id } = await params;
-  const detail = await getCycleDetail(id);
+  const detail = await getCycleDetail(id, undefined, user.caixinhaId);
   if (!detail) notFound();
   const { cycle, rules, memberships, totals, today } = detail;
 
@@ -51,7 +51,11 @@ export default async function CyclePage({ params }: PageProps<"/admin/ciclos/[id
 
   const available = canAddMembers
     ? await db.participant.findMany({
-        where: { status: "ACTIVE", memberships: { none: { cycleId: id } } },
+        where: {
+          status: "ACTIVE",
+          ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}),
+          memberships: { none: { cycleId: id } },
+        },
         orderBy: { fullName: "asc" },
         select: { id: true, fullName: true },
       })

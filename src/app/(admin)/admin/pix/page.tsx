@@ -19,9 +19,12 @@ import { getPixOverview, pixMode } from "@/modules/pix/queries";
 export const metadata = { title: "Pix e conciliação" };
 
 export default async function PixPage() {
-  await requirePagePermission("payments.register");
+  const user = await requirePagePermission("payments.register");
   const mode = pixMode();
-  const [overview, memberships] = await Promise.all([getPixOverview(), listPayableMemberships()]);
+  const [overview, memberships] = await Promise.all([
+    getPixOverview(new Date(), user.caixinhaId),
+    listPayableMemberships(user.caixinhaId),
+  ]);
   const activeMemberships = memberships.filter((m) => m.status === "ACTIVE");
   const waiting = overview.charges.filter((c) => c.effectiveStatus === "ACTIVE").length;
 

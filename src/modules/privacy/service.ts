@@ -16,8 +16,11 @@ import { outstandingPrincipal } from "@/modules/results/service";
 const date = (d: Date | null) => (d ? toISODate(d) : null);
 
 export async function exportParticipantData(actor: CurrentUser, participantId: string) {
-  const p = await db.participant.findUnique({
-    where: { id: participantId },
+  const p = await db.participant.findFirst({
+    where: {
+      id: participantId,
+      ...(actor.role === "ADMIN" && actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}),
+    },
     include: {
       user: {
         select: {
@@ -165,7 +168,12 @@ export async function anonymizeParticipant(actor: CurrentUser, input: { particip
   if (blockers.length > 0) throw new DomainError(blockers[0]);
 
   await db.$transaction(async (tx) => {
-    const p = await tx.participant.findUnique({ where: { id: input.participantId } });
+    const p = await tx.participant.findFirst({
+      where: {
+        id: input.participantId,
+        ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}),
+      },
+    });
     if (!p) throw new DomainError("Participante não encontrado.");
     if (p.anonymizedAt) throw new DomainError("Este cadastro já foi anonimizado.");
     if (p.userId && p.userId === actor.userId) throw new DomainError("Você não pode anonimizar o próprio cadastro.");

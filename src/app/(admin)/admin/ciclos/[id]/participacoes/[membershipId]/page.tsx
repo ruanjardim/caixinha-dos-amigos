@@ -28,9 +28,9 @@ import { principalByMembership } from "@/modules/results/queries";
 export const metadata = { title: "Participação no ciclo" };
 
 export default async function MembershipPage({ params }: PageProps<"/admin/ciclos/[id]/participacoes/[membershipId]">) {
-  await requirePagePermission("participants.manage");
+  const user = await requirePagePermission("participants.manage");
   const { id, membershipId } = await params;
-  const m = await getMembershipDetail(membershipId);
+  const m = await getMembershipDetail(membershipId, undefined, user.caixinhaId);
   if (!m || m.cycleId !== id) notFound();
 
   const today = todayInBrazil();

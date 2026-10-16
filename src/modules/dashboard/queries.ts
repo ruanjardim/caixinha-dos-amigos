@@ -8,8 +8,12 @@ import { getCycleDetail } from "@/modules/cycles/queries";
 
 const COMPETENCE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-export async function listDashboardCycles() {
-  return db.cycle.findMany({ orderBy: { startDate: "desc" }, select: { id: true, name: true, status: true } });
+export async function listDashboardCycles(caixinhaId?: string | null) {
+  return db.cycle.findMany({
+    where: caixinhaId ? { caixinhaId } : undefined,
+    orderBy: { startDate: "desc" },
+    select: { id: true, name: true, status: true },
+  });
 }
 
 /** Ciclo padrão do painel: o aberto mais recente; senão, o mais recente. */
@@ -36,8 +40,13 @@ export type PeriodFilter = { from?: string; to?: string };
  * - Indicadores: situação ATUAL do ciclo (não dependem do período).
  * - Gráficos: recortados pelo período escolhido.
  */
-export async function getAdminDashboard(cycleId: string, period: PeriodFilter = {}, today: ISODate = todayInBrazil()) {
-  const detail = await getCycleDetail(cycleId, today);
+export async function getAdminDashboard(
+  cycleId: string,
+  period: PeriodFilter = {},
+  today: ISODate = todayInBrazil(),
+  caixinhaId?: string | null,
+) {
+  const detail = await getCycleDetail(cycleId, today, caixinhaId);
   if (!detail) return null;
   const { cycle, rules, memberships, totals } = detail;
 

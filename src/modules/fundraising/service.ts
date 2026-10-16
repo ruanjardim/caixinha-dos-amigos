@@ -30,9 +30,9 @@ function domain<T>(fn: () => T): T {
   }
 }
 
-async function loadActivity(tx: DbTransaction, activityId: string) {
-  const a = await tx.fundraisingActivity.findUnique({
-    where: { id: activityId },
+async function loadActivity(tx: DbTransaction, activityId: string, caixinhaId?: string | null) {
+  const a = await tx.fundraisingActivity.findFirst({
+    where: { id: activityId, ...(caixinhaId ? { cycle: { caixinhaId } } : {}) },
     include: { cycle: { select: { status: true } } },
   });
   if (!a) throw new DomainError("Atividade não encontrada.");
@@ -62,7 +62,9 @@ function validateRaffleFields(input: ActivityInput) {
 export async function createActivity(actor: CurrentUser, input: ActivityInput) {
   validateRaffleFields(input);
   return db.$transaction(async (tx) => {
-    const cycle = await tx.cycle.findUnique({ where: { id: input.cycleId } });
+    const cycle = await tx.cycle.findFirst({
+      where: { id: input.cycleId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    });
     if (!cycle) throw new DomainError("Ciclo não encontrado.");
     if (cycle.status === "CLOSED") throw new DomainError("Ciclo encerrado não recebe novas atividades.");
     const isRaffle = input.type === "RAFFLE";
@@ -100,7 +102,7 @@ export async function createActivity(actor: CurrentUser, input: ActivityInput) {
 export async function updateActivity(actor: CurrentUser, activityId: string, input: ActivityInput) {
   validateRaffleFields(input);
   return db.$transaction(async (tx) => {
-    const before = await loadActivity(tx, activityId);
+    const before = await loadActivity(tx, activityId, actor.caixinhaId);
     assertEditable(before);
     if (before.type !== input.type)
       throw new DomainError("O tipo da atividade não pode ser trocado; crie outra atividade.");
@@ -176,7 +178,7 @@ export async function setActivityStatus(
   status: "PLANNED" | "IN_PROGRESS" | "FINISHED" | "CANCELLED",
 ) {
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, activityId);
+    const a = await loadActivity(tx, activityId, actor.caixinhaId);
     if (!STATUS_FLOW[a.status].includes(status)) throw new DomainError("Mudança de situação não permitida.");
     if (status === "CANCELLED" && !a.simulationOnly) {
       const sold = await tx.raffleNumber.count({ where: { activityId, status: "CONFIRMED" } });
@@ -202,7 +204,7 @@ export async function addPrize(
   input: { activityId: string; name: string; description: string | null; costCents: Cents | null; position: number },
 ) {
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, input.activityId);
+    const a = await loadActivity(tx, input.activityId, actor.caixinhaId);
     assertEditable(a);
     if (a.drawnAt) throw new DomainError("Resultado já registrado: prêmios não podem mudar.");
     const prize = await tx.prize.create({
@@ -226,7 +228,7 @@ export async function removePrize(actor: CurrentUser, prizeId: string) {
   return db.$transaction(async (tx) => {
     const prize = await tx.prize.findUnique({ where: { id: prizeId } });
     if (!prize) throw new DomainError("Prêmio não encontrado.");
-    const a = await loadActivity(tx, prize.activityId);
+    const a = await loadActivity(tx, prize.activityId, actor.caixinhaId);
     assertEditable(a);
     if (a.drawnAt) throw new DomainError("Resultado já registrado: prêmios não podem mudar.");
     await tx.prize.delete({ where: { id: prizeId } });
@@ -244,7 +246,9 @@ export async function removePrize(actor: CurrentUser, prizeId: string) {
 }
 
 export async function addActivityImage(actor: CurrentUser, activityId: string, file: unknown, caption: string | null) {
-  const a = await db.fundraisingActivity.findUnique({ where: { id: activityId } });
+  const a = await db.fundraisingActivity.findFirst({
+    where: { id: activityId, ...(actor.caixinhaId ? { cycle: { caixinhaId: actor.caixinhaId } } : {}) },
+  });
   if (!a) throw new DomainError("Atividade não encontrada.");
   assertEditable(a);
   const upload = await saveUpload(file, actor.userId);
@@ -261,7 +265,12 @@ export async function addActivityImage(actor: CurrentUser, activityId: string, f
 }
 
 export async function removeActivityImage(actor: CurrentUser, imageId: string) {
-  const image = await db.activityImage.findUnique({ where: { id: imageId } });
+  const image = await db.activityImage.findFirst({
+    where: {
+      id: imageId,
+      ...(actor.caixinhaId ? { activity: { cycle: { caixinhaId: actor.caixinhaId } } } : {}),
+    },
+  });
   if (!image) throw new DomainError("Imagem não encontrada.");
   await db.activityImage.delete({ where: { id: imageId } });
   await recordAudit({
@@ -278,9 +287,11 @@ export async function addActivityParticipant(
 ) {
   try {
     return await db.$transaction(async (tx) => {
-      const a = await loadActivity(tx, input.activityId);
+      const a = await loadActivity(tx, input.activityId, actor.caixinhaId);
       assertEditable(a);
-      const p = await tx.participant.findUnique({ where: { id: input.participantId } });
+      const p = await tx.participant.findFirst({
+        where: { id: input.participantId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+      });
       if (!p || p.status !== "ACTIVE") throw new DomainError("Participante inexistente ou inativo.");
       const row = await tx.activityParticipant.create({ data: input });
       await recordAudit(
@@ -302,7 +313,12 @@ export async function addActivityParticipant(
 }
 
 export async function removeActivityParticipant(actor: CurrentUser, id: string) {
-  const row = await db.activityParticipant.findUnique({ where: { id } });
+  const row = await db.activityParticipant.findFirst({
+    where: {
+      id,
+      ...(actor.caixinhaId ? { activity: { cycle: { caixinhaId: actor.caixinhaId } } } : {}),
+    },
+  });
   if (!row) throw new DomainError("Registro não encontrado.");
   await db.activityParticipant.delete({ where: { id } });
   await recordAudit({
@@ -331,7 +347,7 @@ export async function decideCompliance(
 ) {
   const document = documentFile ? await saveUpload(documentFile, actor.userId) : null;
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, input.activityId);
+    const a = await loadActivity(tx, input.activityId, actor.caixinhaId);
     assertEditable(a);
     if (
       input.decision === "APPROVED" &&
@@ -419,7 +435,7 @@ export async function setFeatureFlag(
 /** Ativa o modo AUTORIZADO (venda real) — somente com todas as condições cumpridas. */
 export async function activateAuthorizedMode(actor: CurrentUser, activityId: string) {
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, activityId);
+    const a = await loadActivity(tx, activityId, actor.caixinhaId);
     assertEditable(a);
     const check = checkRaffleAuthorization({
       type: a.type,
@@ -451,7 +467,7 @@ export async function activateAuthorizedMode(actor: CurrentUser, activityId: str
 
 export async function generateNumbers(actor: CurrentUser, activityId: string) {
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, activityId);
+    const a = await loadActivity(tx, activityId, actor.caixinhaId);
     assertEditable(a);
     if (a.type !== "RAFFLE") throw new DomainError("Somente sorteios têm numeração.");
     if (a.numberRangeStart === null || a.numberRangeEnd === null) throw new DomainError("Defina a faixa de números.");
@@ -493,9 +509,11 @@ export async function reserveNumber(
   input: { activityId: string; number: number; participantId: string },
 ) {
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, input.activityId);
+    const a = await loadActivity(tx, input.activityId, actor.caixinhaId);
     assertNumbersOpen(a);
-    const p = await tx.participant.findUnique({ where: { id: input.participantId } });
+    const p = await tx.participant.findFirst({
+      where: { id: input.participantId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    });
     if (!p || p.status !== "ACTIVE") throw new DomainError("Participante inexistente ou inativo.");
     const changed = await tx.raffleNumber.updateMany({
       where: { activityId: input.activityId, number: input.number, status: "AVAILABLE" },
@@ -517,7 +535,7 @@ export async function reserveNumber(
 
 export async function releaseNumber(actor: CurrentUser, input: { activityId: string; number: number }) {
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, input.activityId);
+    const a = await loadActivity(tx, input.activityId, actor.caixinhaId);
     assertNumbersOpen(a);
     const changed = await tx.raffleNumber.updateMany({
       where: { activityId: input.activityId, number: input.number, status: "RESERVED" },
@@ -549,7 +567,7 @@ export async function confirmNumber(
 ) {
   if (input.paidOn > today) throw new DomainError("A data do pagamento não pode estar no futuro.");
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, input.activityId);
+    const a = await loadActivity(tx, input.activityId, actor.caixinhaId);
     assertNumbersOpen(a);
     const row = await loadNumber(tx, a.id, input.number);
     if (row.status !== "RESERVED") throw new DomainError("Somente números reservados podem ser confirmados.");
@@ -596,7 +614,9 @@ export async function confirmNumber(
 
 /** Sorteio SIMULADO: nunca é o resultado oficial e não é gravado na atividade. */
 export async function runSimulatedDraw(actor: CurrentUser, activityId: string) {
-  const a = await db.fundraisingActivity.findUnique({ where: { id: activityId } });
+  const a = await db.fundraisingActivity.findFirst({
+    where: { id: activityId, ...(actor.caixinhaId ? { cycle: { caixinhaId: actor.caixinhaId } } : {}) },
+  });
   if (!a) throw new DomainError("Atividade não encontrada.");
   if (!a.simulationOnly)
     throw new DomainError("Sorteio autorizado: o sistema não executa sorteios reais; registre o resultado oficial.");
@@ -632,7 +652,7 @@ export async function recordOfficialResult(
   },
 ) {
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, input.activityId);
+    const a = await loadActivity(tx, input.activityId, actor.caixinhaId);
     if (a.simulationOnly) throw new DomainError("Atividade em simulação não tem resultado oficial.");
     if (a.drawnAt) throw new DomainError("O resultado oficial já foi registrado.");
     if (a.status !== "IN_PROGRESS") throw new DomainError("A atividade precisa estar em andamento.");
@@ -688,7 +708,7 @@ export async function recordActivityEntry(
   input: { activityId: string; kind: "REVENUE" | "COST"; amountCents: Cents; occurredOn: ISODate; description: string },
 ) {
   return db.$transaction(async (tx) => {
-    const a = await loadActivity(tx, input.activityId);
+    const a = await loadActivity(tx, input.activityId, actor.caixinhaId);
     const allowed = canRecordMoney(a);
     if (!allowed.ok) throw new DomainError(allowed.reason);
     if (a.status === "CANCELLED") throw new DomainError("Atividade cancelada.");

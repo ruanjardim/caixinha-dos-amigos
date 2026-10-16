@@ -16,11 +16,11 @@ import { ActivityFields } from "./activity-fields";
 export const metadata = { title: "Arrecadação" };
 
 export default async function FundraisingPage() {
-  await requirePagePermission("fundraising.manage");
+  const user = await requirePagePermission("fundraising.manage");
   const [activities, cycles, flag] = await Promise.all([
-    listActivities(),
+    listActivities({ caixinhaId: user.caixinhaId }),
     db.cycle.findMany({
-      where: { status: { not: "CLOSED" } },
+      where: { status: { not: "CLOSED" }, ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}) },
       orderBy: { startDate: "desc" },
       select: { id: true, name: true },
     }),

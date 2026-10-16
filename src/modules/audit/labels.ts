@@ -17,6 +17,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "user.notifications": "Alterou a preferência de avisos por e-mail",
   "seed.demo": "Dados de demonstração criados",
   "admin.create": "Administrador criado",
+  "caixinha.create": "Caixinha criada",
   "participant.create": "Participante cadastrado",
   "participant.update": "Cadastro de participante alterado",
   "participant.status": "Situação do participante alterada",

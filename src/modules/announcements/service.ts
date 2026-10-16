@@ -12,16 +12,23 @@ import type { AnnouncementInput } from "./schemas";
 export async function saveAnnouncement(actor: CurrentUser, input: AnnouncementInput & { id?: string }) {
   return db.$transaction(async (tx) => {
     if (input.cycleId) {
-      const exists = await tx.cycle.count({ where: { id: input.cycleId } });
+      const exists = await tx.cycle.count({
+        where: { id: input.cycleId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+      });
       if (!exists) throw new DomainError("Ciclo não encontrado.");
     }
     const data = {
       title: input.title,
       body: input.body,
       cycleId: input.cycleId,
+      caixinhaId: actor.caixinhaId ?? null,
       ...(input.publishNow ? { publishedAt: new Date() } : {}),
     };
-    const before = input.id ? await tx.announcement.findUnique({ where: { id: input.id } }) : null;
+    const before = input.id
+      ? await tx.announcement.findFirst({
+          where: { id: input.id, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+        })
+      : null;
     if (input.id && !before) throw new DomainError("Comunicado não encontrado.");
 
     const saved = input.id
@@ -45,7 +52,9 @@ export async function saveAnnouncement(actor: CurrentUser, input: AnnouncementIn
 
 export async function setAnnouncementPublished(actor: CurrentUser, id: string, published: boolean) {
   return db.$transaction(async (tx) => {
-    const a = await tx.announcement.findUnique({ where: { id } });
+    const a = await tx.announcement.findFirst({
+      where: { id, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    });
     if (!a) throw new DomainError("Comunicado não encontrado.");
     const saved = await tx.announcement.update({ where: { id }, data: { publishedAt: published ? new Date() : null } });
     await recordAudit(
@@ -61,8 +70,9 @@ export async function setAnnouncementPublished(actor: CurrentUser, id: string, p
   });
 }
 
-export async function listAnnouncementsForAdmin() {
+export async function listAnnouncementsForAdmin(caixinhaId?: string | null) {
   return db.announcement.findMany({
+    where: caixinhaId ? { caixinhaId } : undefined,
     orderBy: [{ publishedAt: { sort: "desc", nulls: "first" } }, { createdAt: "desc" }],
     include: { cycle: { select: { name: true } } },
   });
@@ -70,11 +80,20 @@ export async function listAnnouncementsForAdmin() {
 
 /** Comunicados publicados visíveis ao participante: gerais ou dos ciclos em que ele está. */
 export async function listAnnouncementsForParticipant(participantId: string | null) {
+  if (!participantId) return [];
+  const participant = await db.participant.findUnique({
+    where: { id: participantId },
+    select: { caixinhaId: true },
+  });
   const cycleIds = participantId
     ? (await db.membership.findMany({ where: { participantId }, select: { cycleId: true } })).map((m) => m.cycleId)
     : [];
   return db.announcement.findMany({
-    where: { publishedAt: { not: null }, OR: [{ cycleId: null }, { cycleId: { in: cycleIds } }] },
+    where: {
+      publishedAt: { not: null },
+      ...(participant?.caixinhaId ? { caixinhaId: participant.caixinhaId } : {}),
+      OR: [{ cycleId: null }, { cycleId: { in: cycleIds } }],
+    },
     orderBy: { publishedAt: "desc" },
     include: { cycle: { select: { name: true } } },
     take: 100,

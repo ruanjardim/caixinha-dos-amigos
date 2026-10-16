@@ -10,11 +10,17 @@ import { requirePagePermission } from "@/modules/auth/session";
 export const metadata = { title: "Editar comunicado" };
 
 export default async function EditAnnouncementPage({ params }: PageProps<"/admin/comunicados/[id]">) {
-  await requirePagePermission("announcements.manage");
+  const user = await requirePagePermission("announcements.manage");
   const { id } = await params;
   const [a, cycles] = await Promise.all([
-    db.announcement.findUnique({ where: { id } }),
-    db.cycle.findMany({ orderBy: { startDate: "desc" }, select: { id: true, name: true } }),
+    db.announcement.findFirst({
+      where: { id, ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}) },
+    }),
+    db.cycle.findMany({
+      where: user.caixinhaId ? { caixinhaId: user.caixinhaId } : undefined,
+      orderBy: { startDate: "desc" },
+      select: { id: true, name: true },
+    }),
   ]);
   if (!a) notFound();
 

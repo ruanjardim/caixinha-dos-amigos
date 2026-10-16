@@ -28,7 +28,7 @@ export const metadata = { title: "Participante" };
 export default async function ParticipantPage({ params }: PageProps<"/admin/participantes/[id]">) {
   const actor = await requirePagePermission("participants.manage");
   const { id } = await params;
-  const p = await getParticipant(id);
+  const p = await getParticipant(id, actor.caixinhaId);
   if (!p) notFound();
   const blockers = p.anonymizedAt ? [] : await anonymizationBlockers(p.id);
 

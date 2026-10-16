@@ -30,10 +30,10 @@ const REPORTS: { type: ReportType; description: string }[] = [
 ];
 
 export default async function ReportsPage({ searchParams }: PageProps<"/admin/relatorios">) {
-  await requirePagePermission("reports.consolidated");
+  const user = await requirePagePermission("reports.consolidated");
   const params = await searchParams;
   const cycles = await db.cycle.findMany({
-    where: { status: { not: "DRAFT" } },
+    where: { status: { not: "DRAFT" }, ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}) },
     orderBy: { startDate: "desc" },
     select: { id: true, name: true },
   });

@@ -82,8 +82,8 @@ function sha256(value: unknown) {
 export async function calculateResults(actor: CurrentUser, cycleId: string) {
   return db.$transaction(async (tx) => {
     await lockCycle(tx, cycleId);
-    const cycle = await tx.cycle.findUnique({
-      where: { id: cycleId },
+    const cycle = await tx.cycle.findFirst({
+      where: { id: cycleId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
       include: { rules: { orderBy: { version: "desc" }, take: 1 }, memberships: { select: { id: true } } },
     });
     if (!cycle) throw new DomainError("Ciclo não encontrado.");
@@ -175,7 +175,9 @@ export async function calculateResults(actor: CurrentUser, cycleId: string) {
 /** Aprova a apuração: torna-se imutável e o ciclo passa para distribuição. */
 export async function approveResults(actor: CurrentUser, calculationId: string) {
   return db.$transaction(async (tx) => {
-    const calc = await tx.resultCalculation.findUnique({ where: { id: calculationId } });
+    const calc = await tx.resultCalculation.findFirst({
+      where: { id: calculationId, ...(actor.caixinhaId ? { cycle: { caixinhaId: actor.caixinhaId } } : {}) },
+    });
     if (!calc) throw new DomainError("Apuração não encontrada.");
     await lockCycle(tx, calc.cycleId);
     const cycle = await tx.cycle.findUniqueOrThrow({ where: { id: calc.cycleId } });
@@ -219,8 +221,11 @@ export async function registerDistribution(
 ) {
   if (input.paidOn > today) throw new DomainError("A data do pagamento não pode estar no futuro.");
   return db.$transaction(async (tx) => {
-    const share = await tx.resultShare.findUnique({
-      where: { id: input.shareId },
+    const share = await tx.resultShare.findFirst({
+      where: {
+        id: input.shareId,
+        ...(actor.caixinhaId ? { calculation: { cycle: { caixinhaId: actor.caixinhaId } } } : {}),
+      },
       include: { calculation: true, distribution: true },
     });
     if (!share) throw new DomainError("Participação não encontrada.");
@@ -303,7 +308,12 @@ export async function registerAdminFeePayment(
     if (!flag?.enabled) {
       throw new DomainError("Pagamento da remuneração administrativa desativado até validação jurídica e tributária.");
     }
-    const calc = await tx.resultCalculation.findUnique({ where: { id: input.calculationId } });
+    const calc = await tx.resultCalculation.findFirst({
+      where: {
+        id: input.calculationId,
+        ...(actor.caixinhaId ? { cycle: { caixinhaId: actor.caixinhaId } } : {}),
+      },
+    });
     if (!calc || calc.status !== "APPROVED") throw new DomainError("Apuração aprovada não encontrada.");
     await lockCycle(tx, calc.cycleId);
     if (calc.adminFeeCents <= 0) throw new DomainError("Não há remuneração administrativa apurada neste ciclo.");
@@ -333,7 +343,9 @@ export async function registerAdminFeePayment(
 export async function closeCycle(actor: CurrentUser, cycleId: string) {
   return db.$transaction(async (tx) => {
     await lockCycle(tx, cycleId);
-    const cycle = await tx.cycle.findUnique({ where: { id: cycleId } });
+    const cycle = await tx.cycle.findFirst({
+      where: { id: cycleId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    });
     if (!cycle) throw new DomainError("Ciclo não encontrado.");
     if (cycle.status !== "SETTLING") throw new DomainError("Somente ciclos em distribuição podem ser encerrados.");
     const calc = await tx.resultCalculation.findFirst({
@@ -372,7 +384,13 @@ export async function returnPrincipal(
 ) {
   if (input.paidOn > today) throw new DomainError("A data da devolução não pode estar no futuro.");
   return db.$transaction(async (tx) => {
-    const m = await tx.membership.findUnique({ where: { id: input.membershipId }, include: { cycle: true } });
+    const m = await tx.membership.findFirst({
+      where: {
+        id: input.membershipId,
+        ...(actor.caixinhaId ? { cycle: { caixinhaId: actor.caixinhaId } } : {}),
+      },
+      include: { cycle: true },
+    });
     if (!m) throw new DomainError("Participação não encontrada.");
     await lockCycle(tx, m.cycleId);
     if (m.status !== "LEFT") throw new DomainError("Registre a saída do participante antes de devolver o principal.");
@@ -422,6 +440,10 @@ export async function reconcileCash(
 ) {
   if (input.referenceDate > today) throw new DomainError("A data de referência não pode estar no futuro.");
   return db.$transaction(async (tx) => {
+    const cycle = await tx.cycle.count({
+      where: { id: input.cycleId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    });
+    if (!cycle) throw new DomainError("Ciclo não encontrado.");
     const r = await tx.ledgerLine.aggregate({
       where: {
         account: "CASH",
@@ -479,7 +501,9 @@ export async function postClosingAdjustment(
     throw new DomainError("Descreva a justificativa da correção com pelo menos 20 caracteres.");
   }
   return db.$transaction(async (tx) => {
-    const cycle = await tx.cycle.findUnique({ where: { id: input.cycleId } });
+    const cycle = await tx.cycle.findFirst({
+      where: { id: input.cycleId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+    });
     if (!cycle || cycle.status !== "CLOSED")
       throw new DomainError("Correções pós-encerramento são só para ciclos encerrados.");
     const entry = await postEntry(tx, {

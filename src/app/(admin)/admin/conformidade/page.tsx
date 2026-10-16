@@ -35,11 +35,16 @@ const FLAGS: Record<string, { title: string; what: string; requires: string; not
 };
 
 export default async function CompliancePage() {
-  await requirePagePermission("compliance.decide");
+  const user = await requirePagePermission("compliance.decide");
   const [flags, pending, history] = await Promise.all([
     db.featureFlag.findMany({ orderBy: { key: "asc" } }),
     db.fundraisingActivity.findMany({
-      where: { type: "RAFFLE", complianceStatus: "PENDING_REVIEW", status: { notIn: ["FINISHED", "CANCELLED"] } },
+      where: {
+        type: "RAFFLE",
+        complianceStatus: "PENDING_REVIEW",
+        status: { notIn: ["FINISHED", "CANCELLED"] },
+        ...(user.caixinhaId ? { cycle: { caixinhaId: user.caixinhaId } } : {}),
+      },
       select: { id: true, title: true, cycle: { select: { name: true } } },
     }),
     db.auditLog.findMany({

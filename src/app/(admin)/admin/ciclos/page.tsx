@@ -13,8 +13,8 @@ import { listCycles } from "@/modules/cycles/queries";
 export const metadata = { title: "Ciclos e cotas" };
 
 export default async function CyclesPage() {
-  await requirePagePermission("cycles.manage");
-  const cycles = await listCycles();
+  const user = await requirePagePermission("cycles.manage");
+  const cycles = await listCycles(user.caixinhaId);
 
   return (
     <div className="space-y-6">

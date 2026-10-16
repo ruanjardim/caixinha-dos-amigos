@@ -13,10 +13,10 @@ import { CycleFields } from "../../cycle-fields";
 export const metadata = { title: "Editar ciclo" };
 
 export default async function EditCyclePage({ params }: PageProps<"/admin/ciclos/[id]/editar">) {
-  await requirePagePermission("cycles.manage");
+  const user = await requirePagePermission("cycles.manage");
   const { id } = await params;
-  const cycle = await db.cycle.findUnique({
-    where: { id },
+  const cycle = await db.cycle.findFirst({
+    where: { id, ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}) },
     include: { rules: { orderBy: { version: "desc" }, take: 1 } },
   });
   if (!cycle) notFound();

@@ -37,7 +37,7 @@ const HISTORY_LABEL: Record<string, string> = {
 export default async function PaymentPage({ params }: PageProps<"/admin/pagamentos/[id]">) {
   const actor = await requirePagePermission("payments.register");
   const { id } = await params;
-  const [p, history] = await Promise.all([getPayment(id), paymentHistory(id)]);
+  const [p, history] = await Promise.all([getPayment(id, actor.caixinhaId), paymentHistory(id)]);
   if (!p) notFound();
 
   const today = todayInBrazil();

@@ -25,10 +25,10 @@ import { getLedgerOverview, listEntries } from "@/modules/ledger/service";
 export const metadata = { title: "Livro-caixa" };
 
 export default async function LedgerPage({ searchParams }: PageProps<"/admin/livro-caixa">) {
-  await requirePagePermission("ledger.read");
+  const user = await requirePagePermission("ledger.read");
   const params = await searchParams;
   const cycles = await db.cycle.findMany({
-    where: { status: { not: "DRAFT" } },
+    where: { status: { not: "DRAFT" }, ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}) },
     orderBy: { startDate: "desc" },
     select: { id: true, name: true, status: true },
   });

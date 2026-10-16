@@ -4,6 +4,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
+import { caixinhaSchema } from "@/modules/caixinhas/schemas";
 import {
   acceptRulesSchema,
   cycleSchema,
@@ -24,6 +25,17 @@ import {
 
 const fieldsWithErrors = (r: { success: boolean; error?: { issues: { path: PropertyKey[] }[] } }) =>
   r.success ? [] : r.error!.issues.map((i) => i.path.join("."));
+
+describe("caixinha", () => {
+  it("normaliza campos vazios e limita o nome", () => {
+    expect(caixinhaSchema.parse({ name: "Amigos do Bairro", description: "" })).toEqual({
+      name: "Amigos do Bairro",
+      description: null,
+    });
+    expect(caixinhaSchema.safeParse({ name: "AB", description: "" }).success).toBe(false);
+    expect(caixinhaSchema.safeParse({ name: "Grupo", description: "x".repeat(301) }).success).toBe(false);
+  });
+});
 
 describe("participante", () => {
   const ok = {

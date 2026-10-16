@@ -22,13 +22,15 @@ const TABS = [
 ];
 
 export default async function PaymentsPage({ searchParams }: PageProps<"/admin/pagamentos">) {
-  await requirePagePermission("payments.register");
+  const user = await requirePagePermission("payments.register");
   const params = await searchParams;
   const status = typeof params.status === "string" ? params.status : "UNDER_REVIEW";
   const q = typeof params.q === "string" ? params.q.slice(0, 100) : "";
   const [payments, underReview] = await Promise.all([
-    listPayments({ status: status === "all" ? undefined : status, q }),
-    db.payment.count({ where: { status: "UNDER_REVIEW" } }),
+    listPayments({ status: status === "all" ? undefined : status, q, caixinhaId: user.caixinhaId }),
+    db.payment.count({
+      where: { status: "UNDER_REVIEW", membership: { cycle: { caixinhaId: user.caixinhaId } } },
+    }),
   ]);
 
   return (

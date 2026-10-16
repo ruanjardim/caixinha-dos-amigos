@@ -1,13 +1,30 @@
 import "server-only";
 import { cache } from "react";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { auth } from "@/modules/auth/auth";
 import { hasPermission, isRole, type Actor, type Permission } from "@/modules/auth/permissions";
 
-export type CurrentUser = Actor & { name: string; email: string; twoFactorEnabled?: boolean };
+export const ACTIVE_CAIXINHA_COOKIE = "caixinha-ativa";
+
+export type UserCaixinha = {
+  id: string;
+  name: string;
+  slug: string;
+  role: "OWNER" | "ADMIN" | "PARTICIPANT";
+};
+
+export type CurrentUser = Actor & {
+  name: string;
+  email: string;
+  twoFactorEnabled?: boolean;
+  caixinhaId?: string | null;
+  caixinhaName?: string | null;
+  caixinhaRole?: UserCaixinha["role"] | null;
+  caixinhas?: UserCaixinha[];
+};
 
 export const TWO_FACTOR_SETUP_PATH = "/seguranca/dois-fatores";
 
@@ -43,10 +60,27 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       role: true,
       status: true,
       twoFactorEnabled: true,
-      participant: { select: { id: true } },
+      participant: { select: { id: true, caixinhaId: true } },
+      caixinhas: {
+        where: { caixinha: { status: "ACTIVE" } },
+        orderBy: { createdAt: "asc" },
+        select: {
+          role: true,
+          caixinha: { select: { id: true, name: true, slug: true } },
+        },
+      },
     },
   });
   if (!user || !isRole(user.role)) return null;
+
+  const caixinhas: UserCaixinha[] = user.caixinhas.map((membership) => ({
+    id: membership.caixinha.id,
+    name: membership.caixinha.name,
+    slug: membership.caixinha.slug,
+    role: membership.role,
+  }));
+  const requestedCaixinhaId = (await cookies()).get(ACTIVE_CAIXINHA_COOKIE)?.value;
+  const activeCaixinha = caixinhas.find((item) => item.id === requestedCaixinhaId) ?? caixinhas[0] ?? null;
 
   return {
     userId: user.id,
@@ -54,11 +88,24 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     email: user.email,
     role: user.role,
     status: user.status,
-    participantId: user.participant?.id ?? null,
+    participantId:
+      user.participant && (!activeCaixinha || user.participant.caixinhaId === activeCaixinha.id)
+        ? user.participant.id
+        : null,
     twoFactorEnabled: user.twoFactorEnabled,
     twoFactorPending: user.role === "ADMIN" && env.ADMIN_2FA_REQUIRED && !user.twoFactorEnabled,
+    caixinhaId: activeCaixinha?.id ?? null,
+    caixinhaName: activeCaixinha?.name ?? null,
+    caixinhaRole: activeCaixinha?.role ?? null,
+    caixinhas,
   };
 });
+
+/** Garante que a operação acontece dentro de uma caixinha selecionada. */
+export function requireActiveCaixinha(user: CurrentUser): string {
+  if (!user.caixinhaId) throw new ForbiddenError("Crie ou selecione uma caixinha antes de continuar.");
+  return user.caixinhaId;
+}
 
 /** Para páginas: redireciona ao login se não houver sessão ativa. */
 export async function requireUser(): Promise<CurrentUser> {

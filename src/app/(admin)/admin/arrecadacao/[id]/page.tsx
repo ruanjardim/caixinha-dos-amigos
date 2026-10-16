@@ -53,12 +53,12 @@ const compactForm = "flex flex-wrap items-end gap-2 space-y-0 [&_button]:h-10 [&
 export default async function ActivityPage({ params }: PageProps<"/admin/arrecadacao/[id]">) {
   const user = await requirePagePermission("fundraising.manage");
   const { id } = await params;
-  const a = await getActivityDetail(id);
+  const a = await getActivityDetail(id, user.caixinhaId);
   if (!a) notFound();
 
   const [participants, flag] = await Promise.all([
     db.participant.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}) },
       orderBy: { fullName: "asc" },
       select: { id: true, fullName: true },
     }),

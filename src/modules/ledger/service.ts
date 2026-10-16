@@ -95,8 +95,11 @@ const MANUAL: Record<ManualEntryKind, { category: LedgerCategory; lines: (c: Cen
   TAX: { category: "TAX", lines: taxLines },
 };
 
-async function assertCycleAcceptsEntries(tx: DbTransaction, cycleId: string) {
-  const cycle = await tx.cycle.findUnique({ where: { id: cycleId }, select: { status: true } });
+async function assertCycleAcceptsEntries(tx: DbTransaction, cycleId: string, caixinhaId?: string | null) {
+  const cycle = await tx.cycle.findFirst({
+    where: { id: cycleId, ...(caixinhaId ? { caixinhaId } : {}) },
+    select: { status: true },
+  });
   if (!cycle) throw new DomainError("Ciclo não encontrado.");
   if (cycle.status === "DRAFT") throw new DomainError("Ciclo em preparação ainda não aceita lançamentos.");
   if (cycle.status === "SETTLING") {
@@ -116,7 +119,7 @@ export async function recordManualEntry(
 ) {
   const spec = MANUAL[input.kind];
   return db.$transaction(async (tx) => {
-    await assertCycleAcceptsEntries(tx, input.cycleId);
+    await assertCycleAcceptsEntries(tx, input.cycleId, actor.caixinhaId);
     const entry = await postEntry(tx, {
       cycleId: input.cycleId,
       occurredOn: input.occurredOn,
@@ -153,15 +156,18 @@ export async function reverseEntry(
   input: { transactionId: string; occurredOn: ISODate; reason: string },
 ) {
   return db.$transaction(async (tx) => {
-    const original = await tx.ledgerTransaction.findUnique({
-      where: { id: input.transactionId },
+    const original = await tx.ledgerTransaction.findFirst({
+      where: {
+        id: input.transactionId,
+        ...(actor.caixinhaId ? { cycle: { caixinhaId: actor.caixinhaId } } : {}),
+      },
       include: { lines: true, reversedBy: { select: { id: true } } },
     });
     if (!original) throw new DomainError("Lançamento não encontrado.");
     if (original.paymentId) throw new DomainError("Lançamentos de pagamento são estornados pela tela do pagamento.");
     if (original.reversesId) throw new DomainError("Este lançamento já é um estorno.");
     if (original.reversedBy) throw new DomainError("Este lançamento já foi estornado.");
-    await assertCycleAcceptsEntries(tx, original.cycleId);
+    await assertCycleAcceptsEntries(tx, original.cycleId, actor.caixinhaId);
 
     const entry = await postEntry(tx, {
       cycleId: original.cycleId,

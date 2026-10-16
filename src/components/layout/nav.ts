@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BookOpenCheck,
+  Boxes,
   CalendarRange,
   FileText,
   HandCoins,
@@ -28,6 +29,7 @@ export type NavItem = {
 
 export const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Painel", icon: BarChart3, available: true },
+  { href: "/admin/caixinhas", label: "Minhas caixinhas", icon: Boxes, available: true },
   { href: "/admin/participantes", label: "Participantes", icon: Users, available: true },
   { href: "/admin/ciclos", label: "Ciclos e cotas", icon: CalendarRange, available: true },
   { href: "/admin/pagamentos", label: "Pagamentos", icon: HandCoins, available: true },

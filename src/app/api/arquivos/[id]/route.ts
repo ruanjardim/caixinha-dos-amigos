@@ -18,17 +18,25 @@ export async function GET(request: Request, { params }: RouteContext<"/api/arqui
   const file = await db.fileUpload.findUnique({
     where: { id },
     include: {
-      payments: { select: { membership: { select: { participantId: true } } } },
-      activityImages: { select: { activity: { select: { cycleId: true, status: true } } } },
+      payments: {
+        select: { membership: { select: { participantId: true, cycle: { select: { caixinhaId: true } } } } },
+      },
+      activityImages: {
+        select: { activity: { select: { cycleId: true, status: true, cycle: { select: { caixinhaId: true } } } } },
+      },
     },
   });
   // Mesmo erro para "não existe" e "sem permissão": não revela a existência do arquivo.
   const notFound = new Response("Arquivo não encontrado", { status: 404 });
   if (!file) return notFound;
 
+  const belongsToActiveCaixinha =
+    !user.caixinhaId ||
+    file.payments.some((p) => p.membership.cycle.caixinhaId === user.caixinhaId) ||
+    file.activityImages.some((image) => image.activity.cycle.caixinhaId === user.caixinhaId);
   let allowed =
-    // Pela matriz de permissões (admin com 2FA pendente não passa).
-    hasPermission(user, "participants.manage") ||
+    // Pela matriz de permissões (admin com 2FA pendente não passa) e pela caixinha selecionada.
+    (hasPermission(user, "participants.manage") && belongsToActiveCaixinha) ||
     file.uploadedById === user.userId ||
     file.payments.some((p) => canViewParticipant(user, p.membership.participantId));
 

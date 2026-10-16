@@ -29,7 +29,7 @@ export async function loadReceiptPayment(paymentId: string) {
       membership: {
         include: {
           participant: { select: { id: true, fullName: true } },
-          cycle: { select: { name: true } },
+          cycle: { select: { name: true, caixinhaId: true } },
         },
       },
       confirmedBy: { select: { name: true } },
@@ -42,6 +42,7 @@ export async function loadReceiptPayment(paymentId: string) {
     participantId: p.membership.participant.id,
     participantName: p.membership.participant.fullName,
     cycleName: p.membership.cycle.name,
+    caixinhaId: p.membership.cycle.caixinhaId,
     amountCents: p.amountCents,
     receivedAt: p.receivedAt ? toISODate(p.receivedAt) : null,
     method: p.method,

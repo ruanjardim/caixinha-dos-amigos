@@ -25,7 +25,13 @@ export async function GET(request: Request, { params }: RouteContext<"/api/relat
   const notFound = new Response("Relatório não encontrado", { status: 404 });
   if (!isReportType(tipo) || !cycleId) return notFound;
 
-  const cycle = await db.cycle.findUnique({ where: { id: cycleId }, select: { id: true } });
+  const cycle = await db.cycle.findFirst({
+    where: {
+      id: cycleId,
+      ...(user.role === "ADMIN" && user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}),
+    },
+    select: { id: true },
+  });
   if (!cycle) return notFound;
 
   const ownMembership = user.participantId

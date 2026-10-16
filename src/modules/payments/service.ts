@@ -34,9 +34,9 @@ function paymentSnapshot(p: Payment) {
   };
 }
 
-async function loadMembershipForPayment(tx: DbTransaction, membershipId: string) {
-  const membership = await tx.membership.findUnique({
-    where: { id: membershipId },
+async function loadMembershipForPayment(tx: DbTransaction, membershipId: string, caixinhaId?: string | null) {
+  const membership = await tx.membership.findFirst({
+    where: { id: membershipId, ...(caixinhaId ? { cycle: { caixinhaId } } : {}) },
     include: { cycle: { select: { id: true, status: true, name: true } } },
   });
   if (!membership) throw new DomainError("Participação não encontrada.");
@@ -129,6 +129,10 @@ async function confirmInTx(
     include: { membership: { include: { cycle: { select: { id: true, status: true } } } } },
   });
   if (!payment) throw new DomainError("Pagamento não encontrado.");
+  if (actor.caixinhaId && payment.membership.cycle.id) {
+    const belongs = await tx.cycle.count({ where: { id: payment.membership.cycle.id, caixinhaId: actor.caixinhaId } });
+    if (!belongs) throw new DomainError("Pagamento não encontrado.");
+  }
   await lockCycle(tx, payment.membership.cycleId);
   if (!(PAYABLE_CYCLE_STATUS as readonly string[]).includes(payment.membership.cycle.status)) {
     throw new DomainError("Este ciclo não está recebendo pagamentos.");
@@ -189,7 +193,7 @@ export async function registerPayment(
     return await db.$transaction(async (tx) => {
       const existing = await checkDuplicates(tx, input);
       if (existing) return existing;
-      await loadMembershipForPayment(tx, input.membershipId);
+      await loadMembershipForPayment(tx, input.membershipId, actor.caixinhaId);
 
       const payment = await tx.payment.create({
         data: {
@@ -243,7 +247,7 @@ export async function informPayment(actor: CurrentUser, input: NewPaymentInput, 
   assertNotFuture(input.receivedAt, today);
   try {
     return await db.$transaction(async (tx) => {
-      const membership = await loadMembershipForPayment(tx, input.membershipId);
+      const membership = await loadMembershipForPayment(tx, input.membershipId, actor.caixinhaId);
       // Escopo obrigatório: só a própria participação.
       if (membership.participantId !== actor.participantId) throw new ForbiddenError();
       const existing = await checkDuplicates(tx, input);
@@ -297,6 +301,14 @@ export async function confirmPayment(
 /** Recusa um pagamento ainda não confirmado (ex.: comprovante inválido, duplicado). */
 export async function rejectPayment(actor: CurrentUser, input: { paymentId: string; reason: string }) {
   await db.$transaction(async (tx) => {
+    const payment = await tx.payment.findFirst({
+      where: {
+        id: input.paymentId,
+        ...(actor.caixinhaId ? { membership: { cycle: { caixinhaId: actor.caixinhaId } } } : {}),
+      },
+      select: { id: true },
+    });
+    if (!payment) throw new DomainError("Pagamento não encontrado.");
     const changed = await tx.payment.updateMany({
       where: { id: input.paymentId, status: { in: ["PENDING", "UNDER_REVIEW"] } },
       data: { status: "CANCELLED", cancelledAt: new Date(), cancelReason: input.reason },
@@ -327,8 +339,11 @@ export async function reversePayment(
 ) {
   assertNotFuture(input.reversedAt, today);
   await db.$transaction(async (tx) => {
-    const payment = await tx.payment.findUnique({
-      where: { id: input.paymentId },
+    const payment = await tx.payment.findFirst({
+      where: {
+        id: input.paymentId,
+        ...(actor.caixinhaId ? { membership: { cycle: { caixinhaId: actor.caixinhaId } } } : {}),
+      },
       include: { membership: { select: { cycleId: true } } },
     });
     if (!payment) throw new DomainError("Pagamento não encontrado.");
@@ -389,7 +404,12 @@ export async function editPendingPayment(
   assertNotFuture(input.receivedAt, today);
   try {
     await db.$transaction(async (tx) => {
-      const before = await tx.payment.findUnique({ where: { id: input.paymentId } });
+      const before = await tx.payment.findFirst({
+        where: {
+          id: input.paymentId,
+          ...(actor.caixinhaId ? { membership: { cycle: { caixinhaId: actor.caixinhaId } } } : {}),
+        },
+      });
       if (!before) throw new DomainError("Pagamento não encontrado.");
       if (before.status !== "PENDING" && before.status !== "UNDER_REVIEW") {
         throw new DomainError("Somente pagamentos não confirmados podem ser corrigidos.");
@@ -428,13 +448,20 @@ export async function editPendingPayment(
 // Consultas
 // ---------------------------------------------------------------------------
 
-export async function listPayments(filter: { status?: string; cycleId?: string; q?: string }) {
+export async function listPayments(filter: { status?: string; cycleId?: string; q?: string; caixinhaId?: string | null }) {
   const statuses = ["PENDING", "UNDER_REVIEW", "CONFIRMED", "CANCELLED", "REVERSED"] as const;
   const status = statuses.find((s) => s === filter.status);
   return db.payment.findMany({
     where: {
       ...(status ? { status } : {}),
-      ...(filter.cycleId ? { membership: { cycleId: filter.cycleId } } : {}),
+      ...(filter.cycleId || filter.caixinhaId
+        ? {
+            membership: {
+              ...(filter.cycleId ? { cycleId: filter.cycleId } : {}),
+              ...(filter.caixinhaId ? { cycle: { caixinhaId: filter.caixinhaId } } : {}),
+            },
+          }
+        : {}),
       ...(filter.q
         ? {
             OR: [
@@ -454,9 +481,9 @@ export async function listPayments(filter: { status?: string; cycleId?: string; 
   });
 }
 
-export async function getPayment(paymentId: string) {
-  return db.payment.findUnique({
-    where: { id: paymentId },
+export async function getPayment(paymentId: string, caixinhaId?: string | null) {
+  return db.payment.findFirst({
+    where: { id: paymentId, ...(caixinhaId ? { membership: { cycle: { caixinhaId } } } : {}) },
     include: {
       membership: {
         include: {

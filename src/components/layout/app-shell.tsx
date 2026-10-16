@@ -5,6 +5,17 @@ import { Logo } from "@/components/brand/logo";
 import { BottomNav, SideNav } from "@/components/layout/nav-links";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { signOutAction } from "@/modules/auth/actions";
+import type { UserCaixinha } from "@/modules/auth/session";
+import { switchCaixinhaAction } from "@/modules/caixinhas/actions";
+
+type ShellUser = {
+  name: string;
+  email: string;
+  role: string;
+  caixinhaId?: string | null;
+  caixinhaName?: string | null;
+  caixinhas?: UserCaixinha[];
+};
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -17,7 +28,7 @@ export function AppShell({
   children,
 }: {
   menu: "admin" | "participant";
-  user: { name: string; email: string; role: string };
+  user: ShellUser;
   children: ReactNode;
 }) {
   return (
@@ -29,6 +40,7 @@ export function AppShell({
           </Link>
           <ThemeToggle />
         </div>
+        <CaixinhaSwitcher caixinhas={user.caixinhas ?? []} activeId={user.caixinhaId ?? null} menu={menu} />
         <div className="flex-1 overflow-y-auto">
           <SideNav menu={menu} />
         </div>
@@ -41,6 +53,11 @@ export function AppShell({
             <Logo />
           </Link>
           <div className="flex items-center gap-2">
+            {user.caixinhaName && (
+              <span className="text-ink-soft max-w-24 truncate text-xs font-semibold sm:max-w-44">
+                {user.caixinhaName}
+              </span>
+            )}
             <ThemeToggle />
             <form action={signOutAction}>
               <button
@@ -64,7 +81,59 @@ export function AppShell({
   );
 }
 
-function UserBox({ user }: { user: { name: string; email: string; role: string } }) {
+function CaixinhaSwitcher({
+  caixinhas,
+  activeId,
+  menu,
+}: {
+  caixinhas: UserCaixinha[];
+  activeId: string | null;
+  menu: "admin" | "participant";
+}) {
+  if (caixinhas.length === 0) {
+    if (menu === "participant") {
+      return <p className="text-muted text-sm">Seu acesso ainda não foi vinculado a uma caixinha.</p>;
+    }
+    return (
+      <Link
+        href="/admin/caixinhas/nova"
+        className="border-brand-300 bg-brand-50 text-brand-800 rounded-xl border px-3 py-2.5 text-sm font-semibold"
+      >
+        + Criar primeira caixinha
+      </Link>
+    );
+  }
+
+  return (
+    <form action={switchCaixinhaAction} className="space-y-1.5">
+      <label htmlFor="shell-caixinha" className="text-muted text-xs font-semibold tracking-wide uppercase">
+        Caixinha em uso
+      </label>
+      <div className="flex gap-2">
+        <select
+          id="shell-caixinha"
+          name="caixinhaId"
+          defaultValue={activeId ?? caixinhas[0]?.id}
+          className="border-line bg-canvas text-ink min-w-0 flex-1 rounded-xl border px-2.5 text-sm font-semibold"
+        >
+          {caixinhas.map((caixinha) => (
+            <option key={caixinha.id} value={caixinha.id}>
+              {caixinha.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="bg-brand-700 min-h-11 rounded-xl px-3 text-xs font-bold text-white hover:bg-brand-800"
+        >
+          Trocar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function UserBox({ user }: { user: ShellUser }) {
   return (
     <div className="border-line bg-canvas/60 flex items-center gap-3 rounded-xl border p-3">
       <span className="bg-brand-100 text-brand-800 grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold">
