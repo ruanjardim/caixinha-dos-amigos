@@ -20,8 +20,28 @@ async function main() {
       role: "PARTICIPANT",
       password,
     });
+    const caixinha = await db.caixinha.create({
+      data: {
+        name: "Caixinha dos Amigos",
+        slug: "caixinha-dos-amigos-e2e",
+        description: "Grupo fictício dos testes ponta a ponta.",
+        ownerId: admin.id,
+        members: {
+          create: [
+            { userId: admin.id, role: "OWNER" },
+            { userId: joao.id, role: "PARTICIPANT" },
+          ],
+        },
+      },
+    });
     const participant = await db.participant.create({
-      data: { fullName: "João E2E", email: joao.email, joinedAt: new Date("2026-10-01T00:00:00Z"), userId: joao.id },
+      data: {
+        fullName: "João E2E",
+        email: joao.email,
+        joinedAt: new Date("2026-10-01T00:00:00Z"),
+        userId: joao.id,
+        caixinhaId: caixinha.id,
+      },
     });
     const actor: CurrentUser = {
       userId: admin.id,
@@ -30,6 +50,9 @@ async function main() {
       role: "ADMIN",
       status: "ACTIVE",
       participantId: null,
+      caixinhaId: caixinha.id,
+      caixinhaName: caixinha.name,
+      caixinhaRole: "OWNER",
     };
     const cycle = await createCycle(actor, {
       name: "Ciclo E2E",

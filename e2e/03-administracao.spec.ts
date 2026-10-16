@@ -23,7 +23,24 @@ test.describe("administração", () => {
     await activate.click();
     await expect(page).toHaveURL(/\/admin$/);
 
-    // 2. Confere e confirma o pagamento informado pelo participante.
+    // 2. Cria outro grupo, confirma o isolamento e volta para a caixinha original.
+    await page.getByRole("link", { name: "Minhas caixinhas" }).click();
+    await page.getByRole("link", { name: "Nova caixinha" }).click();
+    await page.getByLabel("Nome da caixinha").fill("Viagem da Turma");
+    await page.getByLabel("Descrição (opcional)").fill("Grupo fictício criado pelo teste automatizado.");
+    await page.getByRole("button", { name: "Criar caixinha" }).click();
+    await expect(page).toHaveURL(/\/admin\?criada=1$/);
+    await expect(page.getByText("Viagem da Turma", { exact: true }).first()).toBeVisible();
+
+    await page.goto("/admin/caixinhas");
+    const novaCaixinha = page.getByRole("heading", { name: "Viagem da Turma" }).locator("../../..");
+    await expect(novaCaixinha.getByText("Em uso")).toBeVisible();
+    const caixinhaOriginal = page.getByRole("heading", { name: "Caixinha dos Amigos" }).locator("../../..");
+    await caixinhaOriginal.getByRole("button", { name: "Usar esta caixinha" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByText("Caixinha dos Amigos", { exact: true }).first()).toBeVisible();
+
+    // 3. Confere e confirma o pagamento informado pelo participante.
     await page.goto("/admin/pagamentos");
     await page
       .getByRole("link", { name: /João E2E/ })
@@ -35,7 +52,7 @@ test.describe("administração", () => {
     await expect(page.getByText("Confirmado por")).toBeVisible();
     await expect(page.getByRole("link", { name: "Baixar recibo (PDF)" })).toBeVisible();
 
-    // 3. Novo login: senha não basta; código errado é recusado; código certo entra.
+    // 4. Novo login: senha não basta; código errado é recusado; código certo entra.
     await signOut(page);
     await signIn(page, admin, password);
     await expect(page.getByText("Verificação em duas etapas")).toBeVisible();
@@ -47,7 +64,7 @@ test.describe("administração", () => {
     await page.getByRole("button", { name: "Confirmar" }).click();
     await expect(page).toHaveURL(/\/admin$/);
 
-    // 4. Auditoria registra o login malsucedido e a verificação.
+    // 5. Auditoria registra o login malsucedido e a verificação.
     await page.goto("/admin/auditoria");
     await expect(page.getByText("Tentativa de login malsucedida").first()).toBeVisible();
     await expect(page.getByText("Código da verificação em duas etapas recusado").first()).toBeVisible();
