@@ -5,7 +5,13 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { auth } from "@/modules/auth/auth";
-import { hasPermission, isRole, type Actor, type Permission } from "@/modules/auth/permissions";
+import {
+  hasPermission,
+  isCaixinhaManager,
+  isRole,
+  type Actor,
+  type Permission,
+} from "@/modules/auth/permissions";
 
 export const ACTIVE_CAIXINHA_COOKIE = "caixinha-ativa";
 
@@ -22,7 +28,6 @@ export type CurrentUser = Actor & {
   twoFactorEnabled?: boolean;
   caixinhaId?: string | null;
   caixinhaName?: string | null;
-  caixinhaRole?: UserCaixinha["role"] | null;
   caixinhas?: UserCaixinha[];
 };
 
@@ -81,6 +86,10 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   }));
   const requestedCaixinhaId = (await cookies()).get(ACTIVE_CAIXINHA_COOKIE)?.value;
   const activeCaixinha = caixinhas.find((item) => item.id === requestedCaixinhaId) ?? caixinhas[0] ?? null;
+  const administrativeRole = isCaixinhaManager({
+    role: user.role,
+    caixinhaRole: activeCaixinha?.role ?? null,
+  });
 
   return {
     userId: user.id,
@@ -93,7 +102,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
         ? user.participant.id
         : null,
     twoFactorEnabled: user.twoFactorEnabled,
-    twoFactorPending: user.role === "ADMIN" && env.ADMIN_2FA_REQUIRED && !user.twoFactorEnabled,
+    twoFactorPending: administrativeRole && env.ADMIN_2FA_REQUIRED && !user.twoFactorEnabled,
     caixinhaId: activeCaixinha?.id ?? null,
     caixinhaName: activeCaixinha?.name ?? null,
     caixinhaRole: activeCaixinha?.role ?? null,
@@ -132,7 +141,7 @@ export async function requirePermission(permission: Permission): Promise<Current
 }
 
 /** Página inicial conforme o perfil. */
-export function homePathFor(user: Pick<Actor, "role" | "twoFactorPending">): string {
+export function homePathFor(user: Pick<Actor, "role" | "caixinhaRole" | "twoFactorPending">): string {
   if (user.twoFactorPending) return TWO_FACTOR_SETUP_PATH;
-  return user.role === "ADMIN" ? "/admin" : "/minha-caixinha";
+  return isCaixinhaManager(user) ? "/admin" : "/minha-caixinha";
 }

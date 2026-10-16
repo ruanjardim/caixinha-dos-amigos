@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: RouteContext<"/api/relat
   const cycle = await db.cycle.findFirst({
     where: {
       id: cycleId,
-      ...(user.role === "ADMIN" && user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}),
+      ...(user.caixinhaId ? { caixinhaId: user.caixinhaId } : {}),
     },
     select: { id: true },
   });

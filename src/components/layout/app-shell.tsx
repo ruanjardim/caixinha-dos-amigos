@@ -6,6 +6,7 @@ import { BottomNav, SideNav } from "@/components/layout/nav-links";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { signOutAction } from "@/modules/auth/actions";
 import type { UserCaixinha } from "@/modules/auth/session";
+import { isCaixinhaManager } from "@/modules/auth/permissions";
 import { switchCaixinhaAction } from "@/modules/caixinhas/actions";
 
 type ShellUser = {
@@ -14,6 +15,7 @@ type ShellUser = {
   role: string;
   caixinhaId?: string | null;
   caixinhaName?: string | null;
+  caixinhaRole?: UserCaixinha["role"] | null;
   caixinhas?: UserCaixinha[];
 };
 
@@ -40,7 +42,7 @@ export function AppShell({
           </Link>
           <ThemeToggle />
         </div>
-        <CaixinhaSwitcher caixinhas={user.caixinhas ?? []} activeId={user.caixinhaId ?? null} menu={menu} />
+        <CaixinhaSwitcher caixinhas={user.caixinhas ?? []} activeId={user.caixinhaId ?? null} />
         <div className="flex-1 overflow-y-auto">
           <SideNav menu={menu} />
         </div>
@@ -84,19 +86,14 @@ export function AppShell({
 function CaixinhaSwitcher({
   caixinhas,
   activeId,
-  menu,
 }: {
   caixinhas: UserCaixinha[];
   activeId: string | null;
-  menu: "admin" | "participant";
 }) {
   if (caixinhas.length === 0) {
-    if (menu === "participant") {
-      return <p className="text-muted text-sm">Seu acesso ainda não foi vinculado a uma caixinha.</p>;
-    }
     return (
       <Link
-        href="/admin/caixinhas/nova"
+        href="/caixinhas/nova"
         className="border-brand-300 bg-brand-50 text-brand-800 rounded-xl border px-3 py-2.5 text-sm font-semibold"
       >
         + Criar primeira caixinha
@@ -105,35 +102,45 @@ function CaixinhaSwitcher({
   }
 
   return (
-    <form action={switchCaixinhaAction} className="space-y-1.5">
-      <label htmlFor="shell-caixinha" className="text-muted text-xs font-semibold tracking-wide uppercase">
-        Caixinha em uso
-      </label>
-      <div className="flex gap-2">
-        <select
-          id="shell-caixinha"
-          name="caixinhaId"
-          defaultValue={activeId ?? caixinhas[0]?.id}
-          className="border-line bg-canvas text-ink min-w-0 flex-1 rounded-xl border px-2.5 text-sm font-semibold"
-        >
-          {caixinhas.map((caixinha) => (
-            <option key={caixinha.id} value={caixinha.id}>
-              {caixinha.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          className="bg-brand-700 min-h-11 rounded-xl px-3 text-xs font-bold text-white hover:bg-brand-800"
-        >
-          Trocar
-        </button>
-      </div>
-    </form>
+    <div className="space-y-2">
+      <form action={switchCaixinhaAction} className="space-y-1.5">
+        <label htmlFor="shell-caixinha" className="text-muted text-xs font-semibold tracking-wide uppercase">
+          Caixinha em uso
+        </label>
+        <div className="flex gap-2">
+          <select
+            id="shell-caixinha"
+            name="caixinhaId"
+            defaultValue={activeId ?? caixinhas[0]?.id}
+            className="border-line bg-canvas text-ink min-w-0 flex-1 rounded-xl border px-2.5 text-sm font-semibold"
+          >
+            {caixinhas.map((caixinha) => (
+              <option key={caixinha.id} value={caixinha.id}>
+                {caixinha.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="bg-brand-700 min-h-11 rounded-xl px-3 text-xs font-bold text-white hover:bg-brand-800"
+          >
+            Trocar
+          </button>
+        </div>
+      </form>
+      <Link href="/caixinhas" className="text-brand-700 block text-xs font-semibold hover:underline">
+        Ver ou criar caixinhas
+      </Link>
+    </div>
   );
 }
 
 function UserBox({ user }: { user: ShellUser }) {
+  const roleLabel = isCaixinhaManager({ role: user.role === "ADMIN" ? "ADMIN" : "PARTICIPANT", caixinhaRole: user.caixinhaRole })
+    ? user.caixinhaRole === "OWNER"
+      ? "Responsável"
+      : "Administrador"
+    : "Participante";
   return (
     <div className="border-line bg-canvas/60 flex items-center gap-3 rounded-xl border p-3">
       <span className="bg-brand-100 text-brand-800 grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold">
@@ -141,7 +148,7 @@ function UserBox({ user }: { user: ShellUser }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{user.name}</p>
-        <p className="text-muted truncate text-xs">{user.role === "ADMIN" ? "Administrador" : "Participante"}</p>
+        <p className="text-muted truncate text-xs">{roleLabel}</p>
       </div>
       <form action={signOutAction}>
         <button

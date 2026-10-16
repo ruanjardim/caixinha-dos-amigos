@@ -10,6 +10,13 @@ test.describe("participante", () => {
     await expect(page).toHaveURL(/\/minha-caixinha$/);
     await expect(page.getByRole("heading", { name: "Olá, João!" })).toBeVisible();
 
+    await page.getByRole("link", { name: "Minhas caixinhas" }).click();
+    await expect(page).toHaveURL(/\/caixinhas$/);
+    await expect(page.getByRole("link", { name: "Nova caixinha" })).toBeVisible();
+    await page.getByRole("link", { name: "Nova caixinha" }).click();
+    await expect(page.getByRole("heading", { name: "Criar uma caixinha" })).toBeVisible();
+    await page.goto("/minha-caixinha");
+
     await page.goto("/minha-caixinha/informar-pagamento");
     await page.getByLabel("Valor pago (R$)").fill("100,00");
     await page.getByLabel("Código da transação (opcional)").fill("E2E-PIX-0001");

@@ -15,6 +15,7 @@ import { formatPercentBps } from "@/domain/rules";
 import { db } from "@/lib/db";
 import { cn } from "@/lib/cn";
 import { requirePagePermission } from "@/modules/auth/session";
+import { hasPermission } from "@/modules/auth/permissions";
 import { getCollectiveReport } from "@/modules/dashboard/queries";
 
 export const metadata = { title: "Prestação de contas" };
@@ -27,7 +28,9 @@ export default async function CollectiveReportPage({ searchParams }: PageProps<"
   const cycles = await db.cycle.findMany({
     where: {
       status: { not: "DRAFT" },
-      ...(user.role === "ADMIN" ? {} : { memberships: { some: { participantId: user.participantId ?? "-" } } }),
+      ...(hasPermission(user, "dashboard.admin")
+        ? {}
+        : { memberships: { some: { participantId: user.participantId ?? "-" } } }),
     },
     orderBy: { startDate: "desc" },
     select: { id: true, name: true },

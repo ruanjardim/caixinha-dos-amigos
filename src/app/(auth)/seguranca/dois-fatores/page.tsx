@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
+import { isCaixinhaManager } from "@/modules/auth/permissions";
 import { getCurrentUser, homePathFor } from "@/modules/auth/session";
 import { DisableTwoFactor, TwoFactorSetup } from "./two-factor-setup";
 
@@ -9,8 +10,9 @@ export const metadata = { title: "Verificação em duas etapas" };
 export default async function TwoFactorPage() {
   const user = await getCurrentUser();
   if (!user || user.status !== "ACTIVE") redirect("/login");
-  const home = homePathFor({ role: user.role });
-  const required = user.role === "ADMIN" && Boolean(user.twoFactorPending || user.twoFactorEnabled);
+  const home = homePathFor(user);
+  const required =
+    isCaixinhaManager(user) && Boolean(user.twoFactorPending || user.twoFactorEnabled);
 
   return (
     <div className="space-y-6">

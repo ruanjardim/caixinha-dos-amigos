@@ -19,7 +19,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/reci
   const { id } = await params;
   const p = await loadReceiptPayment(id);
   const access = checkReceiptAccess(user, p);
-  const wrongCaixinha = Boolean(user.role === "ADMIN" && user.caixinhaId && p?.caixinhaId !== user.caixinhaId);
+  const wrongCaixinha = Boolean(user.caixinhaId && p?.caixinhaId !== user.caixinhaId);
   if (!access.allowed || !p || wrongCaixinha) {
     return !access.allowed && access.reason === "NOT_CONFIRMED"
       ? new Response("Recibo disponível somente para pagamentos confirmados.", { status: 409 })

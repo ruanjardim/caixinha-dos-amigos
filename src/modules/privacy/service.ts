@@ -19,7 +19,7 @@ export async function exportParticipantData(actor: CurrentUser, participantId: s
   const p = await db.participant.findFirst({
     where: {
       id: participantId,
-      ...(actor.role === "ADMIN" && actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}),
+      ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}),
     },
     include: {
       user: {

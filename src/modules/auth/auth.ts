@@ -101,9 +101,19 @@ export const auth = betterAuth({
       if (ctx.path === "/two-factor/disable" && env.ADMIN_2FA_REQUIRED) {
         const session = await getSessionFromCtx(ctx);
         const user = session
-          ? await db.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
+          ? await db.user.findUnique({
+              where: { id: session.user.id },
+              select: {
+                role: true,
+                caixinhas: {
+                  where: { role: { in: ["OWNER", "ADMIN"] }, caixinha: { status: "ACTIVE" } },
+                  select: { id: true },
+                  take: 1,
+                },
+              },
+            })
           : null;
-        if (user?.role === "ADMIN") {
+        if (user?.role === "ADMIN" || user?.caixinhas.length) {
           throw new APIError("FORBIDDEN", {
             message: "A verificação em duas etapas é obrigatória para administradores.",
           });

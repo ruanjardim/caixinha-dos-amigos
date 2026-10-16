@@ -9,6 +9,7 @@ import {
 
 const admin: Actor = { userId: "u-admin", role: "ADMIN", status: "ACTIVE", participantId: null };
 const joao: Actor = { userId: "u-joao", role: "PARTICIPANT", status: "ACTIVE", participantId: "p-joao" };
+const owner: Actor = { ...joao, caixinhaRole: "OWNER", participantId: null };
 const maria: Actor = { userId: "u-maria", role: "PARTICIPANT", status: "ACTIVE", participantId: "p-maria" };
 const suspended: Actor = { ...admin, status: "SUSPENDED" };
 
@@ -36,6 +37,12 @@ describe("matriz de permissões", () => {
     expect(hasPermission(joao, "payments.confirm")).toBe(false);
     expect(hasPermission(joao, "expenses.manage")).toBe(false);
     expect(hasPermission(joao, "ledger.read")).toBe(false);
+  });
+
+  it("responsável administra somente quando a caixinha ativa lhe dá esse papel", () => {
+    for (const p of ADMIN_ONLY) expect(hasPermission(owner, p), p).toBe(true);
+    expect(hasPermission({ ...owner, caixinhaRole: "PARTICIPANT" }, "dashboard.admin")).toBe(false);
+    expect(hasPermission({ ...owner, twoFactorPending: true }, "payments.confirm")).toBe(false);
   });
 
   it("usuário suspenso não tem nenhuma permissão", () => {

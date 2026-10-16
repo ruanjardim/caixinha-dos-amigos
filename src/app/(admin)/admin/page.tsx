@@ -49,7 +49,7 @@ function shortMonth(c: Competence) {
 
 export default async function AdminDashboard({ searchParams }: PageProps<"/admin">) {
   const user = await requirePagePermission("dashboard.admin");
-  if (!user.caixinhaId) redirect("/admin/caixinhas/nova");
+  if (!user.caixinhaId) redirect("/caixinhas/nova");
   const params = await searchParams;
   const str = (v: unknown) => (typeof v === "string" ? v : undefined);
 

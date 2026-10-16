@@ -82,9 +82,12 @@ describe.skipIf(!enabled)("caixinhas (integração)", () => {
     await expect(assertCaixinhaAccess(participant.userId, amigos.id)).rejects.toThrow(DomainError);
   });
 
-  it("não permite que participante crie uma caixinha administrativa", async () => {
-    await expect(createCaixinha(participant, { name: "Grupo indevido", description: null })).rejects.toThrow(
-      "Somente administradores",
-    );
+  it("permite que participante crie outro grupo e se torne responsável", async () => {
+    const criada = await createCaixinha(participant, { name: "Grupo da Participante", description: null });
+    const membership = await db.caixinhaMember.findUniqueOrThrow({
+      where: { caixinhaId_userId: { caixinhaId: criada.id, userId: participant.userId } },
+    });
+    expect(membership.role).toBe("OWNER");
+    await expect(assertCaixinhaAccess(participant.userId, criada.id)).resolves.toMatchObject({ role: "OWNER" });
   });
 });

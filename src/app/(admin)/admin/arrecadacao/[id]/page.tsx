@@ -16,6 +16,7 @@ import { db } from "@/lib/db";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/modules/auth/session";
+import { hasPermission } from "@/modules/auth/permissions";
 import {
   activateAuthorizedModeAction,
   activityEntryAction,
@@ -77,7 +78,7 @@ export default async function ActivityPage({ params }: PageProps<"/admin/arrecad
   });
   const numbersOpen = (a.status === "PLANNED" || a.status === "IN_PROGRESS") && !a.drawnAt;
   const end = a.numberRangeEnd ?? 0;
-  const canDecide = user.role === "ADMIN";
+  const canDecide = hasPermission(user, "compliance.decide");
   const participantOptions = participants.map((p) => ({ value: p.id, label: p.fullName }));
 
   return (

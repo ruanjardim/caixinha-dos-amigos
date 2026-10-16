@@ -24,7 +24,6 @@ async function availableSlug(name: string) {
 }
 
 export async function createCaixinha(actor: CurrentUser, input: CaixinhaInput) {
-  if (actor.role !== "ADMIN") throw new DomainError("Somente administradores podem criar uma caixinha.");
   const slug = await availableSlug(input.name);
 
   return db.$transaction(async (tx) => {
@@ -66,10 +65,11 @@ export async function listCaixinhasForUser(userId: string) {
 export async function assertCaixinhaAccess(userId: string, caixinhaId: string) {
   const membership = await db.caixinhaMember.findUnique({
     where: { caixinhaId_userId: { caixinhaId, userId } },
-    select: { caixinha: { select: { status: true } } },
+    select: { role: true, caixinha: { select: { status: true } } },
   });
   if (!membership || membership.caixinha.status !== "ACTIVE") {
     throw new DomainError("Você não tem acesso a esta caixinha.");
   }
+  return membership;
 }
 

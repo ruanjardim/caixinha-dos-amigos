@@ -8,6 +8,7 @@
 
 export const ROLES = ["ADMIN", "PARTICIPANT"] as const;
 export type Role = (typeof ROLES)[number];
+export type CaixinhaRole = "OWNER" | "ADMIN" | "PARTICIPANT";
 
 export const PERMISSIONS = [
   // Administrador
@@ -89,12 +90,20 @@ export type Actor = {
   status: "ACTIVE" | "SUSPENDED";
   /** Cadastro de participante vinculado ao usuário (se houver). */
   participantId: string | null;
+  /** Papel dentro da caixinha selecionada. É ele que limita a administração ao grupo atual. */
+  caixinhaRole?: CaixinhaRole | null;
   /**
    * Administrador que ainda não ativou a verificação em duas etapas (obrigatória):
    * fica só com as permissões de participante até concluir a configuração.
    */
   twoFactorPending?: boolean;
 };
+
+export function isCaixinhaManager(actor: Pick<Actor, "role" | "caixinhaRole">): boolean {
+  if (actor.caixinhaRole) return actor.caixinhaRole === "OWNER" || actor.caixinhaRole === "ADMIN";
+  // Compatibilidade com rotinas internas e dados legados sem contexto de caixinha.
+  return actor.role === "ADMIN";
+}
 
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
@@ -103,6 +112,7 @@ export function isRole(value: unknown): value is Role {
 export function hasPermission(actor: Actor | null, permission: Permission): boolean {
   if (!actor || actor.status !== "ACTIVE") return false;
   if (actor.twoFactorPending && ADMIN_PERMISSIONS.includes(permission)) return false;
+  if (ADMIN_PERMISSIONS.includes(permission)) return isCaixinhaManager(actor);
   return ROLE_PERMISSIONS[actor.role]?.has(permission) ?? false;
 }
 
