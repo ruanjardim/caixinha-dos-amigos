@@ -99,6 +99,7 @@ docs/              documentação técnica
 - [Arquitetura](docs/arquitetura.md)
 - [Modelo de dados](docs/modelo-de-dados.md)
 - [Permissões](docs/permissoes.md)
+- [Participantes, convites, cotas e mensalidades](docs/convites.md)
 - [Segurança e LGPD](docs/seguranca.md)
 - [Cálculos financeiros](docs/calculos-financeiros.md)
 - [Backup e restauração](docs/backup.md)

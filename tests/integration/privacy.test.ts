@@ -22,7 +22,13 @@ describe.skipIf(!enabled)("LGPD (integração)", () => {
   beforeAll(async () => {
     const adminId = randomUUID();
     await db.user.create({
-      data: { id: adminId, name: "Admin LGPD", email: `${adminId.slice(0, 8)}@lgpd.local`, role: "ADMIN" },
+      data: {
+        id: adminId,
+        name: "Admin LGPD",
+        email: `${adminId.slice(0, 8)}@lgpd.local`,
+        role: "ADMIN",
+        twoFactorEnabled: true,
+      },
     });
     admin = { userId: adminId, name: "Admin LGPD", email: "", role: "ADMIN", status: "ACTIVE", participantId: null };
 

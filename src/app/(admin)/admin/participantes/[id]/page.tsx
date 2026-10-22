@@ -71,6 +71,9 @@ export default async function ParticipantPage({ params }: PageProps<"/admin/part
               )}
             </CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-muted text-sm">
+                Somente a administração desta caixinha pode enviar ou reenviar convites de acesso.
+              </p>
               {p.user?.role === "ADMIN" && (
                 <Alert tone="info">Este participante também é administrador do sistema.</Alert>
               )}
