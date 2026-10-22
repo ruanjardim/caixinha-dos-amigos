@@ -14,6 +14,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "auth.2fa_disabled_failed": "Tentativa de desativar a verificação em duas etapas recusada",
   "auth.2fa_backup_codes_regenerated": "Gerou novos códigos de recuperação",
   "auth.2fa_reset": "Verificação em duas etapas redefinida (recuperação de acesso)",
+  "auth.2fa_recovery_requested": "Solicitou recuperação do autenticador por e-mail",
+  "auth.2fa_recovered_email": "Recuperou o acesso ao autenticador por e-mail",
   "user.notifications": "Alterou a preferência de avisos por e-mail",
   "seed.demo": "Dados de demonstração criados",
   "admin.create": "Administrador criado",

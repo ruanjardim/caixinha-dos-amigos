@@ -122,6 +122,12 @@ export function LoginForm() {
             Voltar
           </button>
         </div>
+        <Link
+          href="/recuperar-senha?tipo=autenticador"
+          className="text-brand-700 block text-center text-sm font-semibold hover:underline"
+        >
+          Perdi acesso ao autenticador — recuperar por e-mail
+        </Link>
       </form>
     );
   }
@@ -136,7 +142,7 @@ export function LoginForm() {
       </Button>
       <p className="text-center text-sm">
         <Link href="/recuperar-senha" className="text-brand-700 font-semibold hover:underline">
-          Esqueci minha senha
+          Esqueci minha senha ou perdi o autenticador
         </Link>
       </p>
     </form>

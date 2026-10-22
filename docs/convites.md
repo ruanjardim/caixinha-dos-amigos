@@ -19,8 +19,8 @@ Para suspender um acesso existente, use **Suspender acesso**, com justificativa;
 Essa suspensão de conta é a função já existente e não constitui um gerenciador separado de convites pendentes.
 
 O envio usa a integração de e-mail existente. Em produção, é necessário configurar SMTP. Em desenvolvimento,
-sem SMTP, a mensagem fica em `.outbox/`, sem envio externo. O telefone cadastrado não ativa envio por WhatsApp
-ou SMS: esses canais ainda dependem de implementação e configuração próprias.
+sem SMTP, a mensagem fica em `.outbox/`, sem envio externo. Convites e recuperação usam somente o e-mail.
+O telefone permanece como contato opcional; veja [Login e recuperação por e-mail](recuperacao-conta.md).
 
 ## Cotas e mensalidades
 

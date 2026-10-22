@@ -101,7 +101,7 @@ docs/              documentação técnica
 - [Permissões](docs/permissoes.md)
 - [Participantes, convites, cotas e mensalidades](docs/convites.md)
 - [Segurança e LGPD](docs/seguranca.md)
-- [Login e recuperação por e-mail e SMS — especificação pendente de implementação](docs/recuperacao-conta.md)
+- [Login, convites e recuperação por e-mail](docs/recuperacao-conta.md)
 - [Cálculos financeiros](docs/calculos-financeiros.md)
 - [Backup e restauração](docs/backup.md)
 - [Implantação](docs/implantacao.md)
