@@ -44,6 +44,10 @@
 
 ## Pendente / recomendações
 
+- Recuperação da conta com comprovação obrigatória de e-mail **e** telefone por SMS, mantendo o aplicativo
+  autenticador no login. A decisão, os caminhos que precisam de adequação e os critérios de aceite estão em
+  [Login e recuperação da conta](recuperacao-conta.md). É uma especificação pendente de implementação e de um
+  serviço de SMS; não descreve um controle já ativo.
 - Verificação de senhas vazadas (Have I Been Pwned, k-anonimidade) — exige chamada a serviço externo; avaliar.
 - Teste de invasão por terceiro antes de movimentar dinheiro real.
 - Backup do banco depende de `pg_dump` no servidor (ver [backup.md](backup.md)).
