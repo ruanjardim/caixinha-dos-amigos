@@ -54,3 +54,12 @@ Fonte da verdade: [`src/modules/auth/permissions.ts`](../src/modules/auth/permis
 
 Administrador sem 2FA configurado (`ADMIN_2FA_REQUIRED=true`, padrão) é tratado como participante pela matriz de
 permissões (`twoFactorPending`): páginas, ações e APIs administrativas são negadas no servidor até a configuração.
+
+## Convites exclusivos da administração
+
+Somente o responsável ou administrador da caixinha selecionada pode enviar ou reenviar convites. Além da checagem
+nas ações, o serviço de acesso relê usuário, status, duas etapas e papel no grupo dentro da transação. Um administrador
+de outro grupo não pode convidar ou suspender acessos nessa caixinha. Reenviar um convite não altera papéis existentes.
+
+O fluxo e os caminhos dos menus estão em [Participantes e convites](convites.md). Os cenários de autorização e de
+preservação de papéis são testados em `tests/integration/participant-access.test.ts`.

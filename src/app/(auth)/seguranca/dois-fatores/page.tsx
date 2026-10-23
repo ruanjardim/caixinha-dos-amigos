@@ -10,9 +10,8 @@ export const metadata = { title: "Verificação em duas etapas" };
 export default async function TwoFactorPage() {
   const user = await getCurrentUser();
   if (!user || user.status !== "ACTIVE") redirect("/login");
-  const home = homePathFor(user);
-  const required =
-    isCaixinhaManager(user) && Boolean(user.twoFactorPending || user.twoFactorEnabled);
+  const home = homePathFor({ ...user, twoFactorPending: false });
+  const required = isCaixinhaManager(user) && Boolean(user.twoFactorPending || user.twoFactorEnabled);
 
   return (
     <div className="space-y-6">
@@ -36,7 +35,9 @@ export default async function TwoFactorPage() {
         <>
           {user.twoFactorPending && (
             <Alert tone="warning" title="Obrigatória para administradores">
-              Para proteger o dinheiro do grupo, ative a verificação em duas etapas antes de acessar a administração.
+              Para proteger o dinheiro do grupo, ative a verificação em duas etapas antes de acessar a administração. A
+              proteção vale para sua conta em todas as caixinhas que administrar. Depois de ativar, você seguirá para a
+              administração da caixinha selecionada.
             </Alert>
           )}
           <TwoFactorSetup homePath={home} />

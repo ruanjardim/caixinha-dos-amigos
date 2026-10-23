@@ -121,7 +121,9 @@ export const auth = betterAuth({
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
-      const failed = isAPIError(ctx.context.returned);
+      const returned = ctx.context.returned;
+      const failure = isAPIError(returned) ? returned : null;
+      const failed = Boolean(failure);
       if (ctx.path === "/sign-in/email" && failed) {
         // Tentativa de login malsucedida: registra o e-mail digitado (nunca a senha).
         const email = typeof ctx.body?.email === "string" ? ctx.body.email.trim().toLowerCase().slice(0, 120) : null;
@@ -141,6 +143,15 @@ export const auth = betterAuth({
           action: failed ? `${action}_failed` : action,
           entityType: "User",
           entityId: userId,
+          after: failure
+            ? {
+                httpStatus: failure.statusCode,
+                errorCode:
+                  typeof failure.body?.code === "string" && /^[A-Z0-9_]{1,80}$/.test(failure.body.code)
+                    ? failure.body.code
+                    : "UNKNOWN",
+              }
+            : undefined,
         });
       }
     }),

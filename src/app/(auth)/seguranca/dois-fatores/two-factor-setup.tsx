@@ -7,12 +7,12 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { authClient } from "@/modules/auth/auth-client";
+import { twoFactorErrorMessage, TWO_FACTOR_CONNECTION_ERROR } from "@/modules/auth/two-factor-feedback";
 
 type Setup = { qr: string; secret: string; backupCodes: string[] };
 
 /** Ativação em 2 passos: senha → (QR + códigos de recuperação) → código do aplicativo. */
 export function TwoFactorSetup({ homePath }: { homePath: string }) {
-  const router = useRouter();
   const [setup, setSetup] = useState<Setup | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -23,35 +23,44 @@ export function TwoFactorSetup({ homePath }: { homePath: string }) {
     setError(null);
     const password = String(new FormData(event.currentTarget).get("password") ?? "");
     setPending(true);
-    const { data, error } = await authClient.twoFactor.enable({ password });
-    if (error || !data || !("totpURI" in data) || !data.totpURI) {
+    try {
+      const { data, error } = await authClient.twoFactor.enable({ password });
+      if (error || !data || !("totpURI" in data) || !data.totpURI) {
+        setError(twoFactorErrorMessage(error ?? {}));
+        return;
+      }
+      const secret = new URL(data.totpURI).searchParams.get("secret") ?? "";
+      const qr = await QRCode.toDataURL(data.totpURI, { errorCorrectionLevel: "M", margin: 1, width: 220 });
+      setSetup({ qr, secret, backupCodes: data.backupCodes ?? [] });
+    } catch {
+      setError(TWO_FACTOR_CONNECTION_ERROR);
+    } finally {
       setPending(false);
-      setError(error?.status === 429 ? "Muitas tentativas. Aguarde alguns segundos." : "Senha incorreta.");
-      return;
     }
-    const secret = new URL(data.totpURI).searchParams.get("secret") ?? "";
-    const qr = await QRCode.toDataURL(data.totpURI, { errorCorrectionLevel: "M", margin: 1, width: 220 });
-    setSetup({ qr, secret, backupCodes: data.backupCodes ?? [] });
-    setPending(false);
   }
 
   async function confirm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     const code = String(new FormData(event.currentTarget).get("code") ?? "").replace(/\s/g, "");
-    setPending(true);
-    const { error } = await authClient.twoFactor.verifyTotp({ code });
-    setPending(false);
-    if (error) {
-      setError(
-        error.status === 429
-          ? "Muitas tentativas. Aguarde alguns segundos."
-          : "Código inválido. Confira se o horário do celular está automático e tente de novo.",
-      );
+    if (!/^\d{6}$/.test(code)) {
+      setError("Informe os seis dígitos do código do autenticador.");
       return;
     }
-    router.replace(homePath);
-    router.refresh();
+    setPending(true);
+    try {
+      const { error } = await authClient.twoFactor.verifyTotp({ code });
+      if (error) {
+        setError(twoFactorErrorMessage(error));
+        return;
+      }
+      // Recarrega a sessão e evita reutilizar a página administrativa pré-carregada antes do 2FA.
+      window.location.replace(homePath);
+    } catch {
+      setError(TWO_FACTOR_CONNECTION_ERROR);
+    } finally {
+      setPending(false);
+    }
   }
 
   if (!setup) {
@@ -73,6 +82,10 @@ export function TwoFactorSetup({ homePath }: { homePath: string }) {
         <li>Guarde os códigos de recuperação em lugar seguro (fora do celular).</li>
         <li>Digite o código de 6 dígitos que aparece no aplicativo.</li>
       </ol>
+      <Alert tone="info">
+        Mantenha esta página aberta até concluir. Reiniciar em “Começar” gera uma nova configuração e substitui a
+        anterior.
+      </Alert>
       {/* eslint-disable-next-line @next/next/no-img-element -- QR gerado no navegador (data URL) */}
       <img
         src={setup.qr}
@@ -116,13 +129,17 @@ export function TwoFactorSetup({ homePath }: { homePath: string }) {
           name="code"
           inputMode="numeric"
           autoComplete="one-time-code"
-          maxLength={6}
+          maxLength={12}
+          hint="Pode colar os seis dígitos com ou sem espaço."
           required
         />
         <Button type="submit" className="w-full" size="lg" loading={pending} disabled={!saved}>
           Ativar verificação em duas etapas
         </Button>
       </form>
+      <a href="/login" className="text-brand-700 block text-center text-sm font-semibold hover:underline">
+        Entrar novamente
+      </a>
     </div>
   );
 }

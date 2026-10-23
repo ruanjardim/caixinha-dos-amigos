@@ -38,8 +38,11 @@ npm start                # porta 3000 (use um proxy reverso com HTTPS)
 Depois: na tela de login, use "Esqueci minha senha" para definir a senha do administrador. No primeiro acesso, o
 sistema exige a configuração da verificação em duas etapas (aplicativo autenticador + códigos de recuperação).
 
-Administrador que perder o celular E os códigos: `npm run admin:reset-2fa -- --email E --reason "motivo"`
-(executado no servidor, após confirmar a identidade da pessoa; fica na auditoria).
+Administrador que perder o autenticador: **Recuperar acesso → Perdi acesso ao autenticador** envia um link
+de uso único ao e-mail da conta, válido por 15 minutos. A confirmação exige nova senha e encerra as sessões;
+antes de administrar novamente, deve cadastrar um novo autenticador. Ver [recuperação por e-mail](recuperacao-conta.md).
+Sem acesso ao e-mail, permanece a rotina assistida `npm run admin:reset-2fa -- --email E --reason "motivo"`,
+executada no servidor após comprovar a identidade e com justificativa na auditoria.
 
 Agende a tarefa diária (lembretes, expiração de cobranças e limpeza de comprovantes órfãos), 1×/dia:
 

@@ -9,6 +9,7 @@ import { hashPassword } from "@/lib/password";
 import { recordAudit } from "@/modules/audit/audit";
 import { auth } from "@/modules/auth/auth";
 import type { CurrentUser } from "@/modules/auth/session";
+import { requireAccessManager } from "./access-permission";
 import type { ParticipantInput } from "./schemas";
 
 const ANONYMIZED = "Cadastro anonimizado (LGPD): não pode ser alterado nem reativado.";
@@ -131,24 +132,25 @@ export async function setParticipantStatus(
  * o link para ele definir a própria senha. Ninguém mais conhece a senha.
  */
 export async function grantAccess(actor: CurrentUser, participantId: string) {
-  const participant = await db.participant.findFirst({
-    where: { id: participantId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
-    include: { user: true },
-  });
-  if (!participant) throw new DomainError("Participante não encontrado.");
-  if (participant.anonymizedAt) throw new DomainError(ANONYMIZED);
-  if (participant.status !== "ACTIVE") throw new DomainError("Ative o cadastro antes de liberar o acesso.");
+  const participant = await db.$transaction(async (tx) => {
+    const caixinhaId = await requireAccessManager(actor, tx);
+    const participant = await tx.participant.findFirst({
+      where: { id: participantId, caixinhaId },
+      include: { user: true },
+    });
+    if (!participant) throw new DomainError("Participante não encontrado.");
+    if (participant.anonymizedAt) throw new DomainError(ANONYMIZED);
+    if (participant.status !== "ACTIVE") throw new DomainError("Ative o cadastro antes de liberar o acesso.");
 
-  await db.$transaction(async (tx) => {
     if (participant.user) {
       if (participant.user.status !== "ACTIVE") {
         await tx.user.update({ where: { id: participant.user.id }, data: { status: "ACTIVE" } });
       }
-      if (actor.caixinhaId) {
+      if (caixinhaId) {
         await tx.caixinhaMember.upsert({
-          where: { caixinhaId_userId: { caixinhaId: actor.caixinhaId, userId: participant.user.id } },
-          create: { caixinhaId: actor.caixinhaId, userId: participant.user.id, role: "PARTICIPANT" },
-          update: { role: "PARTICIPANT" },
+          where: { caixinhaId_userId: { caixinhaId, userId: participant.user.id } },
+          create: { caixinhaId, userId: participant.user.id, role: "PARTICIPANT" },
+          update: {},
         });
       }
     } else {
@@ -158,11 +160,11 @@ export async function grantAccess(actor: CurrentUser, participantId: string) {
         const linked = await tx.participant.findFirst({ where: { userId: existing.id } });
         if (linked) throw new DomainError("Este e-mail já está vinculado a outro participante.");
         await tx.participant.update({ where: { id: participantId }, data: { userId: existing.id } });
-        if (actor.caixinhaId) {
+        if (caixinhaId) {
           await tx.caixinhaMember.upsert({
-            where: { caixinhaId_userId: { caixinhaId: actor.caixinhaId, userId: existing.id } },
-            create: { caixinhaId: actor.caixinhaId, userId: existing.id, role: "PARTICIPANT" },
-            update: { role: "PARTICIPANT" },
+            where: { caixinhaId_userId: { caixinhaId, userId: existing.id } },
+            create: { caixinhaId, userId: existing.id, role: "PARTICIPANT" },
+            update: {},
           });
         }
       } else {
@@ -185,9 +187,9 @@ export async function grantAccess(actor: CurrentUser, participantId: string) {
           },
         });
         await tx.participant.update({ where: { id: participantId }, data: { userId } });
-        if (actor.caixinhaId) {
+        if (caixinhaId) {
           await tx.caixinhaMember.create({
-            data: { caixinhaId: actor.caixinhaId, userId, role: "PARTICIPANT" },
+            data: { caixinhaId, userId, role: "PARTICIPANT" },
           });
         }
       }
@@ -196,6 +198,7 @@ export async function grantAccess(actor: CurrentUser, participantId: string) {
       { actorId: actor.userId, action: "participant.grant_access", entityType: "Participant", entityId: participantId },
       tx,
     );
+    return participant;
   });
 
   await auth.api.requestPasswordReset({
@@ -205,8 +208,9 @@ export async function grantAccess(actor: CurrentUser, participantId: string) {
 
 export async function suspendAccess(actor: CurrentUser, participantId: string, reason: string) {
   await db.$transaction(async (tx) => {
+    const caixinhaId = await requireAccessManager(actor, tx);
     const participant = await tx.participant.findFirst({
-      where: { id: participantId, ...(actor.caixinhaId ? { caixinhaId: actor.caixinhaId } : {}) },
+      where: { id: participantId, caixinhaId },
     });
     if (!participant?.userId) throw new DomainError("Este participante não tem acesso ao sistema.");
     if (participant.userId === actor.userId) throw new DomainError("Você não pode suspender o próprio acesso.");
